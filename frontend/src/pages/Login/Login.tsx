@@ -31,6 +31,7 @@ function Login() {
 
         if (resposta.ok) {
           console.log('Login realizado!')
+          navigate('/admin')
         } else {
           console.log(dados.erro)
         }

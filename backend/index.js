@@ -4,6 +4,7 @@ import cors from 'cors'
 import bcrypt from 'bcrypt'
 
 import loginRoutes from './src/routes/loginRoutes.js'
+import adminRoutes from './src/routes/adminRoutes.js'
 
 
 const app = express()
@@ -17,6 +18,7 @@ app.get('/', (req, res) => {
 })
 
 app.use('/api', loginRoutes)
+app.use('/api/admin', adminRoutes)
 
 app.get('/teste-banco', async (req, res) => {
     try {

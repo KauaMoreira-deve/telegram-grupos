@@ -6,6 +6,14 @@ import grupoTecnologia from './assets/grupo-tecnologia.png'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Login from './pages/Login/Login'
 
+import DashboardLayout from './pages/Dashboard/DashboardLayout'
+import DashboardHome from './pages/Dashboard/DashboardHome'
+import DashboardGroups from './pages/Dashboard/DashboardGroups'
+import DashboardGroupForm from './pages/Dashboard/DashboardGroupForm'
+import DashboardCategories from './pages/Dashboard/DashboardCategories'
+import DashboardUsers from './pages/Dashboard/DashboardUsers'
+import DashboardSettings from './pages/Dashboard/DashboardSettings'
+
 
 function App() {
   return (
@@ -196,15 +204,24 @@ function App() {
 
         {/* LOGIN DO ADMINISTRADOR */}
         <Route
-          path="/dash"
+          path="/login"
           element={<Login />}
         />
+
+        {/* DASHBOARD ADMINISTRATIVO */}
+        <Route path="/admin" element={<DashboardLayout />}>
+          <Route index element={<DashboardHome />} />
+          <Route path="grupos" element={<DashboardGroups />} />
+          <Route path="grupos/novo" element={<DashboardGroupForm />} />
+          <Route path="categorias" element={<DashboardCategories />} />
+          <Route path="usuarios" element={<DashboardUsers />} />
+          <Route path="configuracoes" element={<DashboardSettings />} />
+        </Route>
 
       </Routes>
 
     </BrowserRouter>
   )
 }
-
 
 export default App
