@@ -1,0 +1,19 @@
+{
+  "name": "backend-telegram",
+  "version": "1.0.0",
+  "description": "",
+  "license": "MIT",
+  "author": "KauaMoreira-dev",
+  "type": "nodemon",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "mysql2": "^3.24.3",
+    "nest": "^0.1.6"
+  }
+}

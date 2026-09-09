@@ -1,0 +1,124 @@
+.login-page {
+  display: grid;
+  min-height: 100svh;
+  padding: 24px;
+  place-items: center;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(190, 39, 220, 0.2), transparent 30%),
+    radial-gradient(circle at 85% 85%, rgba(150, 0, 219, 0.18), transparent 32%),
+    var(--bg);
+}
+
+.login-card {
+  width: min(100%, 420px);
+  padding: 42px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--bg);
+  box-shadow: 0 20px 45px rgba(63, 25, 87, 0.14);
+  text-align: left;
+}
+
+.login-brand {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 28px;
+  border-radius: 14px;
+  place-items: center;
+  background: linear-gradient(135deg, #be27dc, #9600db);
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.login-heading h1 {
+  margin: 0;
+  color: var(--text-h);
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.login-heading p {
+  margin: 10px 0 30px;
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.login-form {
+  display: grid;
+  gap: 20px;
+}
+
+.login-field {
+  display: grid;
+  gap: 8px;
+}
+
+.login-field label {
+  color: var(--text-h);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.login-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  outline: none;
+  background: var(--bg);
+  color: var(--text-h);
+  font: inherit;
+  font-size: 0.95rem;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.login-field input::placeholder {
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.login-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.login-submit {
+  width: 100%;
+  margin-top: 4px;
+  padding: 13px 18px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #be27dc, #9600db);
+  box-shadow: 0 7px 14px rgba(150, 0, 219, 0.25);
+  color: #fff;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.login-submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(150, 0, 219, 0.3);
+}
+
+.login-submit:focus-visible {
+  outline: 3px solid var(--accent-border);
+  outline-offset: 3px;
+}
+
+@media (max-width: 480px) {
+  .login-page {
+    padding: 16px;
+  }
+
+  .login-card {
+    padding: 30px 24px;
+    border-radius: 18px;
+  }
+}

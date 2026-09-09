@@ -1,0 +1,265 @@
+.topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 22px 32px;
+}
+
+.topo h1 {
+  margin: 0;
+  color: var(--text-h);
+  font-size: 1.35rem;
+  letter-spacing: -0.8px;
+}
+
+main {
+  flex: 1;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: 86px 32px 72px;
+  background:
+    radial-gradient(circle at 16% 20%, rgba(190, 39, 220, 0.16), transparent 30%),
+    radial-gradient(circle at 84% 72%, rgba(150, 0, 219, 0.15), transparent 28%);
+}
+
+.hero::before,
+.hero::after {
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  border: 1px solid rgba(190, 39, 220, 0.16);
+  border-radius: 50%;
+  content: '';
+}
+
+.hero::before {
+  top: -130px;
+  right: 10%;
+}
+
+.hero::after {
+  bottom: -170px;
+  left: 6%;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.hero h2 {
+  max-width: 760px;
+  margin: 0 auto 18px;
+  color: var(--text-h);
+  font-size: clamp(2.3rem, 5vw, 4.5rem);
+  line-height: 1.04;
+  letter-spacing: -2.5px;
+}
+
+.hero-content > p {
+  max-width: 680px;
+  margin: 0 auto;
+  color: var(--text);
+  font-size: 1.08rem;
+  line-height: 1.7;
+}
+
+.cards-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  max-width: 950px;
+  margin: 36px auto 0;
+}
+
+.topo-cont {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+.topo-cont li {
+  list-style: none;
+  padding: 5px;
+}
+
+.topo-cont li a {
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+
+.topo-cont li a:hover {
+  color: var(--accent);
+}
+
+.btn-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.groups-section {
+  padding: 88px 32px;
+  background: var(--bg);
+}
+
+.groups-content {
+  max-width: 1040px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.groups-content > h2 {
+  margin: 0 0 12px;
+  color: var(--text-h);
+  font-size: clamp(2rem, 4vw, 3.1rem);
+  line-height: 1.1;
+  letter-spacing: -1.6px;
+}
+
+.groups-content > p {
+  max-width: 650px;
+  margin: 0;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+.filter-container {
+  margin: 30px 0 24px;
+}
+
+.filter-button {
+  padding: 10px 19px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #be27dc, #9600db);
+  box-shadow: 0 5px 12px rgba(150, 0, 219, 0.23);
+  color: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 330px));
+  gap: 22px;
+}
+
+.group-card {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--bg);
+  box-shadow: 0 12px 25px rgba(63, 25, 87, 0.09);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.group-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 32px rgba(63, 25, 87, 0.14);
+}
+
+.group-image {
+  display: block;
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  background: #52107b;
+}
+
+.group-card-content {
+  padding: 22px;
+}
+
+.group-card h3 {
+  margin: 0 0 9px;
+  color: var(--text-h);
+  font-size: 1.15rem;
+}
+
+.group-card-content > p {
+  min-height: 76px;
+  margin: 0;
+  color: var(--text);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.group-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 18px 0;
+}
+
+.group-tags span {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(190, 39, 220, 0.1);
+  color: #9c13be;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.group-members {
+  display: block;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.86rem;
+}
+
+@media (max-width: 680px) {
+  .topo {
+    justify-content: center;
+    padding: 18px 20px;
+  }
+
+  .topo nav {
+    display: none;
+  }
+
+  .hero {
+    padding: 62px 20px 52px;
+  }
+
+  .hero h2 {
+    letter-spacing: -1.6px;
+  }
+
+  .cards-container {
+    gap: 12px;
+  }
+
+  .groups-section {
+    padding: 62px 20px;
+  }
+
+  .groups-content {
+    text-align: center;
+  }
+
+  .groups-content > p {
+    margin: 0 auto;
+  }
+
+  .groups-grid {
+    justify-content: center;
+  }
+}
