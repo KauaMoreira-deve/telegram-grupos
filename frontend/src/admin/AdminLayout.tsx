@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Icon } from './icons'
 import type { FeedbackType } from './feedback'
-import './admin.css'
 
 type Feedback = { message: string; type: FeedbackType } | null
 
@@ -33,10 +32,6 @@ export default function AdminLayout() {
   }
 
   useEffect(() => {
-    setIsMenuOpen(false)
-  }, [location.pathname])
-
-  useEffect(() => {
     if (!feedback) return undefined
     const timer = window.setTimeout(() => setFeedback(null), 4200)
     return () => window.clearTimeout(timer)
@@ -53,7 +48,7 @@ export default function AdminLayout() {
         <nav className="admin-nav" aria-label="Navegação principal">
           <p className="admin-nav-label">Menu principal</p>
           {navigation.map((item) => (
-            <NavLink className="admin-nav-link" key={item.to} to={item.to}>
+            <NavLink className="admin-nav-link" key={item.to} onClick={() => setIsMenuOpen(false)} to={item.to}>
               <Icon name={item.icon} size={19} />
               <span>{item.label}</span>
             </NavLink>

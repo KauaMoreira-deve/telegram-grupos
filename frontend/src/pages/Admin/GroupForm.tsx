@@ -38,7 +38,6 @@ export default function GroupForm() {
           <label className="admin-field"><span>URL do grupo <b>*</b></span><input defaultValue={group ? group.name.toLocaleLowerCase('pt-BR').replaceAll(' ', '-') : ''} name="slug" placeholder="ex.: dev-brasil" required /></label>
           <label className="admin-field full"><span>Descrição <b>*</b></span><textarea defaultValue={group ? `Comunidade ${group.name} para troca de experiências e conexões.` : ''} name="description" placeholder="Conte um pouco sobre o grupo, seus objetivos e para quem ele é indicado..." required rows={5} /></label>
           <label className="admin-field"><span>Link do Telegram <b>*</b></span><div className="admin-input-icon"><Icon name="link" size={17} /><input defaultValue={group ? `https://t.me/${group.name.toLocaleLowerCase('pt-BR').replaceAll(' ', '')}` : ''} name="telegramLink" placeholder="https://t.me/nomedogrupo" required type="url" /></div></label>
-          <label className="admin-field"><span>URL da imagem</span><div className="admin-input-icon"><Icon name="image" size={17} /><input name="imageUrl" placeholder="https://exemplo.com/imagem.jpg" type="url" /></div><small>Recomendado: imagem quadrada de pelo menos 400 × 400 px.</small></label>
         </div>
 
         <div className="admin-form-divider" />

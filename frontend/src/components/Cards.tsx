@@ -1,6 +1,6 @@
 import './Cards.css'
 
-function Card({numero, descricao}: {numero: number, descricao: string}) {
+function Card({numero, descricao}: {numero: number | string, descricao: string}) {
     return (
         <div className="card-content">
 

@@ -1,5 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Users, UserCheck, Tags, MousePointerClick } from 'lucide-react';
+import { adminFetch as fetch } from '../../auth';
+import { apiUrl } from '../../config/api';
+
+const formatCount = (value: number) => new Intl.NumberFormat('pt-BR').format(value);
+
+type RecentGroup = {
+  id: number;
+  name: string;
+  category: string;
+  status: string;
+  date: string;
+};
 
 export default function DashboardHome() {
   const [statsData, setStatsData] = useState({
@@ -9,12 +21,12 @@ export default function DashboardHome() {
     totalAcessos: 0
   });
   
-  const [recentGroups, setRecentGroups] = useState<any[]>([]);
+  const [recentGroups, setRecentGroups] = useState<RecentGroup[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/admin/stats');
+        const response = await fetch(apiUrl('/api/admin/stats'));
         const data = await response.json();
         if (data.stats) setStatsData(data.stats);
         if (data.recentGroups) setRecentGroups(data.recentGroups);
@@ -29,7 +41,7 @@ export default function DashboardHome() {
     { label: 'Total de grupos', value: statsData.totalGroups, icon: <Users size={24} />, color: 'var(--primary-color)' },
     { label: 'Grupos ativos', value: statsData.activeGroups, icon: <UserCheck size={24} />, color: 'var(--success-color)' },
     { label: 'Total de categorias', value: statsData.totalCategories, icon: <Tags size={24} />, color: 'var(--warning-color)' },
-    { label: 'Total de acessos', value: `${(statsData.totalAcessos / 1000).toFixed(1)}k`, icon: <MousePointerClick size={24} />, color: 'var(--info-color)' },
+    { label: 'Total de acessos', value: formatCount(statsData.totalAcessos), icon: <MousePointerClick size={24} />, color: 'var(--info-color)' },
   ];
 
   return (

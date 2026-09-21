@@ -1,64 +1,23 @@
-import { useState, useEffect } from 'react';
-import { Edit2, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Edit2, Plus, Trash2, X } from 'lucide-react';
+import { adminFetch as fetch } from '../../auth';
+import { apiUrl } from '../../config/api';
+
+type User = { id: number; name: string; email: string; status: string; role: 'superadmin' | 'editor' };
+type UserForm = { nome_usuario: string; email_usuario: string; senha_usuario: string; status_usuario: string; papel_usuario: 'superadmin' | 'editor' };
+const blankForm: UserForm = { nome_usuario: '', email_usuario: '', senha_usuario: '', status_usuario: 'ativo', papel_usuario: 'editor' };
 
 export default function DashboardUsers() {
-  const [users, setUsers] = useState<any[]>([]);
-
+  const [users, setUsers] = useState<User[]>([]); const [form, setForm] = useState<UserForm>(blankForm); const [editingId, setEditingId] = useState<number | null>(null); const [isOpen, setIsOpen] = useState(false); const [isLoading, setIsLoading] = useState(true); const [isSaving, setIsSaving] = useState(false); const [message, setMessage] = useState('');
+  const loadUsers = useCallback(async () => { setIsLoading(true); try { const response = await fetch(apiUrl('/api/admin/users')); const data = await response.json(); if (!response.ok) throw new Error(data.erro || 'Não foi possível carregar os usuários.'); setUsers(data); } catch (error) { setMessage(error instanceof Error ? error.message : 'Erro de conexão ao buscar usuários.'); } finally { setIsLoading(false); } }, []);
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch('http://localhost:3000/api/admin/users');
-        const data = await response.json();
-        setUsers(data);
-      } catch (error) {
-        console.error("Erro ao buscar usuários:", error);
-      }
-    };
-    fetchUsers();
-  }, []);
-
-  return (
-    <div className="dashboard-categories">
-      <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>E-mail</th>
-              <th>Status</th>
-              <th className="actions-column">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(user => (
-              <tr key={user.id}>
-                <td><strong>{user.name}</strong></td>
-                <td><span className="text-muted">{user.email}</span></td>
-                <td>
-                  <span className={`badge-status ${user.status.toLowerCase()}`}>
-                    {user.status}
-                  </span>
-                </td>
-                <td className="actions-cell">
-                  <button className="btn-icon" title="Editar">
-                    <Edit2 size={16} />
-                  </button>
-                  <button className="btn-icon danger" title="Excluir">
-                    <Trash2 size={16} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {users.length === 0 && (
-              <tr>
-                <td colSpan={4} className="empty-state">
-                  Nenhum usuário encontrado.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+    const timer = window.setTimeout(() => void loadUsers(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadUsers]);
+  function openCreate() { setEditingId(null); setForm(blankForm); setIsOpen(true); }
+  function openEdit(user: User) { setEditingId(user.id); setForm({ nome_usuario: user.name, email_usuario: user.email, senha_usuario: '', status_usuario: user.status.toLowerCase(), papel_usuario: user.role }); setIsOpen(true); }
+  function closeModal() { if (!isSaving) { setIsOpen(false); setForm(blankForm); } }
+  async function saveUser(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); setIsSaving(true); try { const response = await fetch(apiUrl(`/api/admin/users${editingId ? `/${editingId}` : ''}`), { method: editingId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) }); const data = await response.json(); if (!response.ok) throw new Error(data.erro || 'Não foi possível salvar o usuário.'); setMessage(data.mensagem); closeModal(); await loadUsers(); } catch (error) { setMessage(error instanceof Error ? error.message : 'Erro de conexão ao salvar usuário.'); } finally { setIsSaving(false); } }
+  async function deleteUser(user: User) { if (!window.confirm(`Excluir o usuário “${user.name}”?`)) return; try { const response = await fetch(apiUrl(`/api/admin/users/${user.id}`), { method: 'DELETE' }); const data = await response.json(); if (!response.ok) throw new Error(data.erro || 'Não foi possível excluir o usuário.'); setMessage(data.mensagem); await loadUsers(); } catch (error) { setMessage(error instanceof Error ? error.message : 'Erro de conexão ao excluir usuário.'); } }
+  return <div className="dashboard-categories"><div className="page-actions-header justify-end"><button className="btn-primary" onClick={openCreate} type="button"><Plus size={18} />Novo usuário</button></div>{message && <p className="form-message">{message}</p>}<div className="table-container"><table className="data-table"><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th className="actions-column">Ações</th></tr></thead><tbody>{isLoading ? <tr><td className="empty-state" colSpan={5}>Carregando usuários…</td></tr> : users.length ? users.map((user) => <tr key={user.id}><td><strong>{user.name}</strong></td><td><span className="text-muted">{user.email}</span></td><td><span className="badge-category">{user.role === 'superadmin' ? 'Superadministrador' : 'Editor'}</span></td><td><span className={`badge-status ${user.status.toLowerCase()}`}>{user.status}</span></td><td className="actions-cell"><button className="btn-icon" onClick={() => openEdit(user)} title="Editar" type="button"><Edit2 size={16} /></button><button className="btn-icon danger" onClick={() => void deleteUser(user)} title="Excluir" type="button"><Trash2 size={16} /></button></td></tr>) : <tr><td className="empty-state" colSpan={5}>Nenhum usuário encontrado.</td></tr>}</tbody></table></div>{isOpen && <div className="modal-backdrop"><div aria-modal="true" className="modal-card" role="dialog"><div className="modal-heading"><h2>{editingId ? 'Editar usuário' : 'Criar usuário'}</h2><button aria-label="Fechar" className="btn-icon" onClick={closeModal} type="button"><X size={19} /></button></div><form onSubmit={(event) => void saveUser(event)}><div className="form-group"><label htmlFor="nome_usuario">Nome</label><input id="nome_usuario" onChange={(event) => setForm((current) => ({ ...current, nome_usuario: event.target.value }))} required value={form.nome_usuario} /></div><div className="form-group"><label htmlFor="email_usuario">E-mail</label><input id="email_usuario" onChange={(event) => setForm((current) => ({ ...current, email_usuario: event.target.value }))} required type="email" value={form.email_usuario} /></div><div className="form-group"><label htmlFor="senha_usuario">{editingId ? 'Nova senha (opcional)' : 'Senha'}</label><input id="senha_usuario" minLength={8} onChange={(event) => setForm((current) => ({ ...current, senha_usuario: event.target.value }))} required={!editingId} type="password" value={form.senha_usuario} /></div><div className="form-group"><label htmlFor="papel_usuario">Perfil</label><select id="papel_usuario" onChange={(event) => setForm((current) => ({ ...current, papel_usuario: event.target.value as UserForm['papel_usuario'] }))} value={form.papel_usuario}><option value="editor">Editor</option><option value="superadmin">Superadministrador</option></select></div><div className="form-group"><label htmlFor="status_usuario">Status</label><select id="status_usuario" onChange={(event) => setForm((current) => ({ ...current, status_usuario: event.target.value }))} value={form.status_usuario}><option value="ativo">Ativo</option><option value="inativo">Inativo</option></select></div><div className="form-actions"><button className="btn-secondary" disabled={isSaving} onClick={closeModal} type="button">Cancelar</button><button className="btn-primary" disabled={isSaving} type="submit">{isSaving ? 'Salvando…' : 'Salvar usuário'}</button></div></form></div></div>}</div>;
 }

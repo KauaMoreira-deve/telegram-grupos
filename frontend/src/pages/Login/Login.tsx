@@ -1,12 +1,21 @@
 import './Login.css'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { saveAdminSession } from '../../auth'
+import { apiUrl } from '../../config/api'
+import PageMeta from '../../components/PageMeta'
 
 function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
  
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    setErrorMessage('')
+    setIsLoading(true)
 
     const form = event.currentTarget
 
@@ -16,7 +25,7 @@ function Login() {
  
 
     try {
-      const resposta = await fetch('http://localhost:3000/api/login', {
+      const resposta = await fetch(apiUrl('/api/login'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -29,20 +38,28 @@ function Login() {
 
       const dados = await resposta.json()
 
-        if (resposta.ok) {
-          console.log('Login realizado!')
-          navigate('/admin')
+        if (resposta.ok && dados.token && dados.usuario) {
+          saveAdminSession(dados.usuario, dados.token)
+          const requestedLocation = (location.state as { from?: { pathname?: string; search?: string; hash?: string } } | null)?.from
+          const requestedPath = requestedLocation?.pathname?.startsWith('/admin')
+            ? `${requestedLocation.pathname}${requestedLocation.search || ''}${requestedLocation.hash || ''}`
+            : '/admin'
+          navigate(requestedPath, { replace: true })
         } else {
-          console.log(dados.erro)
+          setErrorMessage(dados.erro || 'Não foi possível entrar.')
         }
 
     } catch (erro) {
       console.error('Erro ao conectar com a API:', erro)
+      setErrorMessage('Não foi possível conectar ao servidor.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
     <main className="login-page">
+      <PageMeta description="Acesso restrito à administração." noIndex path="/dash" title="Entrar" />
       <section className="login-card" aria-labelledby="login-title">
 
         <div className="login-brand" aria-hidden="true">
@@ -58,6 +75,7 @@ function Login() {
           className="login-form"
           onSubmit={handleSubmit}
         >
+          {errorMessage && <p className="login-error" role="alert">{errorMessage}</p>}
 
           <div className="login-field">
             <label htmlFor="email">
@@ -93,9 +111,10 @@ function Login() {
 
           <button
             className="login-submit"
+            disabled={isLoading}
             type="submit"
           >
-            Entrar
+            {isLoading ? 'Entrando...' : 'Entrar'}
           </button>
 
         </form>

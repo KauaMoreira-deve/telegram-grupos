@@ -5,7 +5,8 @@
   min-height: 36px;
   padding: 0 16px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #be27dc, #9600db);
+  border: 1px solid #ac07f8;
+  background: linear-gradient(135deg, #4a0058, rgba(34, 0, 49, 0.7));
   box-shadow: 0 5px 10px rgba(16, 126, 175, 0.3);
   color: #fff;
   font-size: 14px;
