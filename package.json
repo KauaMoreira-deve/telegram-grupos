@@ -1,0 +1,16 @@
+{
+  "name": "putaria-no-telegram-fullstack",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Build e inicialização do frontend e backend no mesmo deploy.",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "scripts": {
+    "build": "npm run build --prefix frontend",
+    "build:hostinger": "npm ci --prefix backend --omit=dev --no-audit --no-fund && npm ci --prefix frontend --include=dev --no-audit --no-fund && npm run build",
+    "start": "npm --prefix backend run start",
+    "test": "npm --prefix backend test",
+    "lint": "npm --prefix frontend run lint"
+  }
+}

@@ -75,3 +75,10 @@ test('todas as areas administrativas exigem autenticacao', async () => {
     assert.equal((await response.json()).erro, 'Autenticação necessária.');
   }
 });
+
+test('rotas de API inexistentes nunca retornam o frontend', async () => {
+  const response = await fetch(`${baseUrl}/api/rota-inexistente`);
+  assert.equal(response.status, 404);
+  assert.match(response.headers.get('content-type'), /^application\/json/);
+  assert.equal((await response.json()).erro, 'Rota não encontrada.');
+});

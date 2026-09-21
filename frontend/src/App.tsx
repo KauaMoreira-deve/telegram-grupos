@@ -999,6 +999,7 @@ function App() {
           <Route path="/termos-de-uso" element={<TermsOfUsePage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
+        <Route path="/login" element={<Navigate replace to="/dash" />} />
         <Route path="/dash" element={<Login />} />
         <Route path="/admin" element={<RequireAdmin><DashboardLayout /></RequireAdmin>}>
           <Route index element={<DashboardHome />} />

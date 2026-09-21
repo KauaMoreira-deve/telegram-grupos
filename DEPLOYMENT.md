@@ -10,7 +10,7 @@ A configuração em `compose.production.yml` usa Caddy para HTTPS automático, N
 
 ## Estrutura e caminhos do repositório
 
-Este projeto possui frontend e backend separados e não tem `package.json` na raiz. Não configure a hospedagem para executar `npm run build` diretamente na raiz do repositório.
+O frontend e o backend continuam separados, mas existe um `package.json` na raiz para coordenar um deploy full-stack. Em plataformas gerenciadas como a Hostinger, use a raiz do repositório e os scripts de build e inicialização documentados abaixo.
 
 | Serviço | Diretório de contexto | Arquivo principal |
 |---|---|---|
@@ -20,6 +20,16 @@ Este projeto possui frontend e backend separados e não tem `package.json` na ra
 | Proxy HTTPS | raiz do repositório | `Caddyfile` |
 
 Ao usar uma plataforma com suporte a Docker Compose, selecione a raiz do repositório e informe `compose.production.yml`. Se a plataforma exigir serviços separados, use `frontend` e `backend` como diretórios raiz de cada serviço, respectivamente.
+
+### Hostinger Node.js Web App
+
+- Root Directory: raiz do repositório (`.`)
+- Build command: `npm run build:hostinger`
+- Start command: `npm start`
+- Entry file, quando solicitado: `backend/index.js`
+- Node.js: `22.x`
+
+O build gera `frontend/dist`. Em produção, o Express serve esse diretório para rotas do site e mantém todas as rotas `/api/*` sob responsabilidade da API.
 
 ## 1. Requisitos do servidor
 

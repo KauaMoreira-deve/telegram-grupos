@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import express from 'express';
 import conexao from './src/config/database.js';
@@ -15,6 +17,9 @@ import publicRoutes from './src/routes/publicRoutes.js';
 
 const app = express();
 const allowedOrigins = new Set(env.corsOrigins);
+const projectDirectory = path.dirname(fileURLToPath(import.meta.url));
+const frontendDistDirectory = path.resolve(projectDirectory, '../frontend/dist');
+const frontendIndexFile = path.join(frontendDistDirectory, 'index.html');
 
 app.disable('x-powered-by');
 app.set('trust proxy', env.trustProxy);
@@ -51,6 +56,18 @@ app.use(express.json({ limit: '64kb', strict: true }));
 app.use('/api', loginRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/public', publicRoutes);
+
+app.use('/api', notFoundHandler);
+
+if (env.isProduction) {
+  app.use(express.static(frontendDistDirectory, { index: false }));
+  app.get('/{*frontendPath}', (_req, res, next) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(frontendIndexFile, (error) => {
+      if (error) next(error);
+    });
+  });
+}
 
 app.use(notFoundHandler);
 app.use(errorHandler);

@@ -2,13 +2,30 @@ import crypto from 'node:crypto';
 import { env } from '../config/env.js';
 
 const MAX_RATE_LIMIT_KEYS = 50_000;
+const API_CONTENT_SECURITY_POLICY = "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'";
+const FRONTEND_CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "connect-src 'self'",
+  "font-src 'self' data:",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "img-src 'self' data: https:",
+  "object-src 'none'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+].join('; ');
 
 function clientKey(req) {
   return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
 export function securityHeaders(req, res, next) {
-  res.setHeader('Content-Security-Policy', "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'");
+  const isApiRequest = req.path === '/api' || req.path.startsWith('/api/');
+  res.setHeader(
+    'Content-Security-Policy',
+    isApiRequest ? API_CONTENT_SECURITY_POLICY : FRONTEND_CONTENT_SECURITY_POLICY,
+  );
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
   res.setHeader('Origin-Agent-Cluster', '?1');
