@@ -1,4 +1,3 @@
-import { pathToFileURL } from 'node:url';
 import cors from 'cors';
 import express from 'express';
 import conexao from './src/config/database.js';
@@ -57,18 +56,68 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 let server;
+let startPromise;
 
-export async function startServer() {
-  if (env.runMigrations) await runMigrations();
+function closeServer(httpServer) {
+  if (!httpServer?.listening) return Promise.resolve();
 
-  server = app.listen(env.port, env.host, () => {
-    console.log(`Servidor iniciado na porta ${env.port} (${env.nodeEnv}).`);
+  return new Promise((resolve, reject) => {
+    httpServer.close((error) => {
+      if (error) reject(error);
+      else resolve();
+    });
   });
-  server.requestTimeout = 15_000;
-  server.headersTimeout = 10_000;
-  server.keepAliveTimeout = 5_000;
-  server.maxRequestsPerSocket = 1_000;
-  return server;
+}
+
+export function startServer() {
+  if (startPromise) return startPromise;
+
+  startPromise = new Promise((resolve, reject) => {
+    const httpServer = app.listen(env.port, env.host);
+    server = httpServer;
+
+    httpServer.requestTimeout = 15_000;
+    httpServer.headersTimeout = 10_000;
+    httpServer.keepAliveTimeout = 5_000;
+    httpServer.maxRequestsPerSocket = 1_000;
+
+    function handleStartupError(error) {
+      httpServer.off('listening', handleListening);
+      reject(error);
+    }
+
+    function handleListening() {
+      httpServer.off('error', handleStartupError);
+      console.log(`Servidor iniciado na porta ${env.port} (${env.nodeEnv}).`);
+      resolve(httpServer);
+    }
+
+    httpServer.once('error', handleStartupError);
+    httpServer.once('listening', handleListening);
+  }).then(async (httpServer) => {
+    if (env.runMigrations) await runMigrations();
+    return httpServer;
+  }).catch(async (error) => {
+    try {
+      await closeServer(server);
+    } catch (closeError) {
+      console.error('Não foi possível encerrar o servidor após a falha de inicialização.', {
+        code: closeError.code,
+        name: closeError.name,
+      });
+    }
+    try {
+      await conexao.end();
+    } catch (databaseError) {
+      console.error('Não foi possível encerrar o banco após a falha de inicialização.', {
+        code: databaseError.code,
+        name: databaseError.name,
+      });
+    }
+    throw error;
+  });
+
+  return startPromise;
 }
 
 async function shutdown(signal) {
@@ -76,18 +125,15 @@ async function shutdown(signal) {
   const forceExit = setTimeout(() => process.exit(1), 10_000);
   forceExit.unref();
 
-  if (server) {
-    await new Promise((resolve) => server.close(resolve));
-  }
+  if (server) await closeServer(server);
   await conexao.end();
   process.exit(0);
 }
 
-const isMainModule = process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url;
-if (isMainModule) {
+if (env.nodeEnv !== 'test' && !process.env.NODE_TEST_CONTEXT) {
   process.once('SIGTERM', () => void shutdown('SIGTERM'));
   process.once('SIGINT', () => void shutdown('SIGINT'));
-  startServer().catch((error) => {
+  void startServer().catch((error) => {
     console.error('Não foi possível iniciar o servidor.', {
       code: error.code,
       name: error.name,
