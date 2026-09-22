@@ -453,8 +453,29 @@ function ShareActions({ group, compact = false }: { group: PublicGroup; compact?
 
 function GroupCard({ group, onAccess, onLiked }: { group: PublicGroup; onAccess: (groupId: number) => void; onLiked: (groupId: number, likes: number) => void }) {
   const isFeatured = group.featured;
+  const navigate = useNavigate();
+
+  function openCard(event: React.MouseEvent<HTMLElement>) {
+    if ((event.target as HTMLElement).closest('a, button')) return;
+    if (isFeatured) {
+      const canOpenGroup = hasOpenedTelegramFolder();
+      const safeGroupLink = safeTelegramUrl(group.link);
+      window.open(canOpenGroup && safeGroupLink ? safeGroupLink : telegramFolderUrl, '_blank', 'noopener,noreferrer');
+      if (canOpenGroup && safeGroupLink) onAccess(group.id);
+      else markTelegramFolderAsOpened();
+      return;
+    }
+    navigate(groupPath(group));
+  }
+
+  function openCardWithKeyboard(event: React.KeyboardEvent<HTMLElement>) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    openCard(event as unknown as React.MouseEvent<HTMLElement>);
+  }
+
   return (
-    <article className={`group-card ${isFeatured ? 'group-card-featured' : ''}`} key={group.id}>
+    <article aria-label={isFeatured ? `Entrar no grupo ${group.name}` : `Ver detalhes do grupo ${group.name}`} className={`group-card ${isFeatured ? 'group-card-featured' : ''}`} key={group.id} onClick={openCard} onKeyDown={openCardWithKeyboard} role={isFeatured ? 'link' : undefined} tabIndex={isFeatured ? 0 : undefined}>
       {isFeatured && <span className="group-featured-ribbon">Destaque</span>}
       {isFeatured ? <GroupCardContent group={group} /> : <Link aria-label={`Ver detalhes do grupo ${group.name}`} className="group-card-link" to={groupPath(group)}><GroupCardContent group={group} /></Link>}
       <div className="group-card-actions">
@@ -513,6 +534,7 @@ function LandingPage() {
     });
 
     return [...filtered].sort((first, second) => {
+      if (first.featured !== second.featured) return Number(second.featured) - Number(first.featured);
       if (sortMode === 'votados') return (Number(second.likes) || 0) - (Number(first.likes) || 0) || second.id - first.id;
       if (sortMode === 'membros') return (second.members ?? -1) - (first.members ?? -1) || second.id - first.id;
       if (sortMode === 'acessados') return (Number(second.accesses) || 0) - (Number(first.accesses) || 0) || second.id - first.id;
@@ -605,101 +627,101 @@ function LandingPage() {
     <>
       <PageMeta description={pageDescription} image={imagemGrupos} imageAlt="Diretório de grupos adultos no Telegram" noIndex={invalidCategory} path={canonicalPath} structuredData={structuredData} title={pageTitle} />
       <main>
-      <section className="hero" id="home">
-        <div className="hero-content">
-          <h1><strong>{isCategoryPage ? <>Grupos de {categoryLabel} no <span className="gradient-roxo">Telegram +18</span></> : <>Grupos adultos no Telegram: <span className="gradient-roxo">links ativos +18</span></>}</strong></h1>
+        <section className="hero" id="home">
+          <div className="hero-content">
+            <h1><strong>{isCategoryPage ? <>Grupos de {categoryLabel} no <span className="gradient-roxo">Telegram +18</span></> : <>Grupos adultos no Telegram: <span className="gradient-roxo">links ativos +18</span></>}</strong></h1>
 
-          <p>{isCategoryPage
-            ? <>Explore <strong className="color-text">grupos de {categoryLabel} no Telegram</strong> destinados a maiores de 18 anos. Compare descrições, número de membros e acesse comunidades adultas da categoria.</>
-            : <>Encontre <strong className="color-text">grupos adultos e canais +18 no Telegram</strong> organizados por categoria. Consulte descrições, número de membros e links de acesso em um diretório gratuito, sem cadastro.</>}</p>
-          <div className="btn-container">
-            <Button href="/adicionar-grupo">Adicione seu grupo</Button>
-            <Button href="#groups">Ver grupos</Button>
-          </div>
-          <div className="cards-container">
-            <Cards numero={stats.totalGroups || groups.length} descricao="Grupos ativos" />
-            <Cards numero={stats.totalCategories || categories.length} descricao="Categorias" />
-            <Cards numero={formatCount(stats.totalAccesses)} descricao="Acessos" />
-          </div>
-        </div>
-      </section>
-
-      <section className="groups-section" id="groups">
-        <div className="groups-content">
-          <h2>{isCategoryPage ? `Grupos +18 de ${categoryLabel}` : 'Lista de grupos +18 no Telegram'}</h2>
-          <p>{isCategoryPage ? `Comunidades adultas de ${categoryLabel} com links diretos para o Telegram.` : 'Explore grupos de pornô no Telegram, comunidades para adultos, casais, público LGBTQIA+ e outras categorias.'}</p>
-          <div className="group-tools">
-            <label className="group-search">
-              <Search aria-hidden="true" size={19} />
-              <span className="sr-only">Pesquisar grupos</span>
-              <input onChange={(event) => { setSearchQuery(event.target.value); setCurrentPage(1); }} placeholder="Pesquise por nome, categoria ou assunto" type="search" value={searchQuery} />
-            </label>
-            <div className={`sort-menu ${sortMenuOpen ? 'is-open' : ''}`}>
-              <button aria-expanded={sortMenuOpen} className="sort-menu-trigger" onClick={() => setSortMenuOpen((open) => !open)} type="button"><SlidersHorizontal aria-hidden="true" size={18} /> Ordenar: {sortOptions.find((option) => option.value === sortMode)?.label}<ChevronDown aria-hidden="true" size={17} /></button>
-              {sortMenuOpen && <div className="sort-menu-panel">
-                {sortOptions.map((option) => {
-                  const Icon = option.icon;
-                  return (
-                    <button className={sortMode === option.value ? 'active' : ''} key={option.value} onClick={() => { setSortMode(option.value); setSortMenuOpen(false); setCurrentPage(1); }} type="button">
-                      <Icon aria-hidden="true" size={18} />
-                      <span><strong>{option.label}</strong><small>{option.description}</small></span>
-                    </button>
-                  );
-                })}
-              </div>}
+            <p>{isCategoryPage
+              ? <>Explore <strong className="color-text">grupos de {categoryLabel} no Telegram</strong> destinados a maiores de 18 anos. Compare descrições, número de membros e acesse comunidades adultas da categoria.</>
+              : <>Encontre <strong className="color-text">grupos adultos e canais +18 no Telegram</strong> organizados por categoria. Consulte descrições, número de membros e links de acesso em um diretório gratuito, sem cadastro.</>}</p>
+            <div className="btn-container">
+              <Button href="/adicionar-grupo">Adicione seu grupo</Button>
+              <Button href="#groups">Ver grupos</Button>
+            </div>
+            <div className="cards-container">
+              <Cards numero={stats.totalGroups || groups.length} descricao="Grupos ativos" />
+              <Cards numero={stats.totalCategories || categories.length} descricao="Categorias" />
+              <Cards numero={formatCount(stats.totalAccesses)} descricao="Acessos" />
             </div>
           </div>
-          <div className="filter-scroll-shell">
-            <div aria-label="Filtrar por categoria" className="filter-container">
-              <Link className={`filter-button ${selectedCategory === '' && selectedHashtag === '' ? 'active' : ''}`} onClick={() => setCurrentPage(1)} to="/#groups">Todos</Link>
-              {categories.map((category) => (
-                <Link className={`filter-button ${selectedCategory === category.url && !selectedHashtag ? 'active' : ''}`} key={category.id} onClick={() => setCurrentPage(1)} to={`/categorias/${encodeURIComponent(category.url)}#groups`}>
-                  {category.name}
-                </Link>
-              ))}
-              {selectedHashtag && <button className="filter-button active" onClick={clearGroupFilters} type="button">#{selectedHashtag} ×</button>}
+        </section>
+
+        <section className="groups-section" id="groups">
+          <div className="groups-content">
+            <h2>{isCategoryPage ? `Grupos +18 de ${categoryLabel}` : 'Lista de grupos +18 no Telegram'}</h2>
+            <p>{isCategoryPage ? `Comunidades adultas de ${categoryLabel} com links diretos para o Telegram.` : 'Explore grupos de pornô no Telegram, comunidades para adultos, casais, público LGBTQIA+ e outras categorias.'}</p>
+            <div className="group-tools">
+              <label className="group-search">
+                <Search aria-hidden="true" size={19} />
+                <span className="sr-only">Pesquisar grupos</span>
+                <input onChange={(event) => { setSearchQuery(event.target.value); setCurrentPage(1); }} placeholder="Pesquise por nome, categoria ou assunto" type="search" value={searchQuery} />
+              </label>
+              <div className={`sort-menu ${sortMenuOpen ? 'is-open' : ''}`}>
+                <button aria-expanded={sortMenuOpen} className="sort-menu-trigger" onClick={() => setSortMenuOpen((open) => !open)} type="button"><SlidersHorizontal aria-hidden="true" size={18} /> Ordenar: {sortOptions.find((option) => option.value === sortMode)?.label}<ChevronDown aria-hidden="true" size={17} /></button>
+                {sortMenuOpen && <div className="sort-menu-panel">
+                  {sortOptions.map((option) => {
+                    const Icon = option.icon;
+                    return (
+                      <button className={sortMode === option.value ? 'active' : ''} key={option.value} onClick={() => { setSortMode(option.value); setSortMenuOpen(false); setCurrentPage(1); }} type="button">
+                        <Icon aria-hidden="true" size={18} />
+                        <span><strong>{option.label}</strong><small>{option.description}</small></span>
+                      </button>
+                    );
+                  })}
+                </div>}
+              </div>
+            </div>
+            <div className="filter-scroll-shell">
+              <div aria-label="Filtrar por categoria" className="filter-container">
+                <Link className={`filter-button ${selectedCategory === '' && selectedHashtag === '' ? 'active' : ''}`} onClick={() => setCurrentPage(1)} to="/#groups">Todos</Link>
+                {categories.map((category) => (
+                  <Link className={`filter-button ${selectedCategory === category.url && !selectedHashtag ? 'active' : ''}`} key={category.id} onClick={() => setCurrentPage(1)} to={`/categorias/${encodeURIComponent(category.url)}#groups`}>
+                    {category.name}
+                  </Link>
+                ))}
+                {selectedHashtag && <button className="filter-button active" onClick={clearGroupFilters} type="button">#{selectedHashtag} ×</button>}
+              </div>
+            </div>
+
+            <div className="groups-grid">
+              {paginatedGroups.map((group) => <GroupCard group={group} key={group.id} onAccess={registerAccess} onLiked={updateLikes} />)}
+              {visibleGroups.length === 0 && <p>Nenhum grupo encontrado.</p>}
+            </div>
+            {totalPages > 1 && (
+              <nav aria-label="Páginas de grupos" className="pagination">
+                {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                  <button aria-current={currentPage === page ? 'page' : undefined} className={currentPage === page ? 'active' : ''} key={page} onClick={() => { setCurrentPage(page); document.querySelector('#groups')?.scrollIntoView({ behavior: 'smooth' }); }} type="button">{page}</button>
+                ))}
+              </nav>
+            )}
+          </div>
+        </section>
+
+        <section className="faq-section" id="faq">
+          <div className="faq-content">
+            <div className="faq-heading">
+              <span>FAQ</span>
+              <h2>Perguntas frequentes</h2>
+              <p>Encontre respostas rápidas antes de descobrir sua próxima comunidade.</p>
+            </div>
+            <div className="faq-list">
+              {faqItems.map((item, index) => {
+                const isOpen = openFaq === index;
+                return (
+                  <article className={`faq-item ${isOpen ? 'is-open' : ''}`} key={item.question}>
+                    <h3>
+                      <button aria-controls={`faq-answer-${index}`} aria-expanded={isOpen} onClick={() => setOpenFaq(isOpen ? -1 : index)} type="button">
+                        {item.question}
+                        <span aria-hidden="true">{isOpen ? '−' : '+'}</span>
+                      </button>
+                    </h3>
+                    <p hidden={!isOpen} id={`faq-answer-${index}`}>{item.answer}</p>
+                  </article>
+                );
+              })}
             </div>
           </div>
-
-          <div className="groups-grid">
-            {paginatedGroups.map((group) => <GroupCard group={group} key={group.id} onAccess={registerAccess} onLiked={updateLikes} />)}
-            {visibleGroups.length === 0 && <p>Nenhum grupo encontrado.</p>}
-          </div>
-          {totalPages > 1 && (
-            <nav aria-label="Páginas de grupos" className="pagination">
-              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-                <button aria-current={currentPage === page ? 'page' : undefined} className={currentPage === page ? 'active' : ''} key={page} onClick={() => { setCurrentPage(page); document.querySelector('#groups')?.scrollIntoView({ behavior: 'smooth' }); }} type="button">{page}</button>
-              ))}
-            </nav>
-          )}
-        </div>
-      </section>
-
-      <section className="faq-section" id="faq">
-        <div className="faq-content">
-          <div className="faq-heading">
-            <span>FAQ</span>
-            <h2>Perguntas frequentes</h2>
-            <p>Encontre respostas rápidas antes de descobrir sua próxima comunidade.</p>
-          </div>
-          <div className="faq-list">
-            {faqItems.map((item, index) => {
-              const isOpen = openFaq === index;
-              return (
-                <article className={`faq-item ${isOpen ? 'is-open' : ''}`} key={item.question}>
-                  <h3>
-                    <button aria-controls={`faq-answer-${index}`} aria-expanded={isOpen} onClick={() => setOpenFaq(isOpen ? -1 : index)} type="button">
-                      {item.question}
-                      <span aria-hidden="true">{isOpen ? '−' : '+'}</span>
-                    </button>
-                  </h3>
-                  <p hidden={!isOpen} id={`faq-answer-${index}`}>{item.answer}</p>
-                </article>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+        </section>
       </main>
     </>
   );

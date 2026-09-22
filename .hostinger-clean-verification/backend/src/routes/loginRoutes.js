@@ -33,7 +33,7 @@ router.post('/login', noStore, loginLimiter, async (req, res) => {
        LIMIT 1`,
       [email],
     );
-    const user = users[0];
+    const user = users[0];1
     const passwordMatches = await bcrypt.compare(password, user?.senha_usuario || DUMMY_PASSWORD_HASH);
 
     if (!user || !passwordMatches) {

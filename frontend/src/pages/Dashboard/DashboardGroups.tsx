@@ -54,7 +54,9 @@ export default function DashboardGroups() {
     return () => window.clearTimeout(timer);
   }, [location.state]);
 
-  const filteredGroups = groups.filter((group) => `${group.name} ${group.category}`.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredGroups = groups
+    .filter((group) => `${group.name} ${group.category}`.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((first, second) => Number(second.featured) - Number(first.featured) || second.id - first.id);
 
   async function handleDelete(group: Group) {
     if (!window.confirm(`Excluir o grupo “${group.name}”? Esta ação não pode ser desfeita.`)) return;

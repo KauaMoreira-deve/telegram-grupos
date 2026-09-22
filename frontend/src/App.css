@@ -357,13 +357,16 @@ main {
   border-radius: 18px;
   background: var(--surface-glass);
   backdrop-filter: blur(12px);
-  box-shadow: 0 12px 25px rgba(63, 25, 87, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 12px 25px rgba(63, 25, 87, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
   transition:
     transform 180ms ease,
     box-shadow 180ms ease;
 }
 
 .group-card-link {
+  display: block;
   color: inherit;
   text-align: left;
   text-decoration: none;
@@ -396,7 +399,16 @@ main {
 .group-card:hover {
   transform: translateY(-4px);
   border-color: rgba(118, 35, 164, 0.58);
-  box-shadow: var(--neon-glow), 0 18px 32px rgba(63, 25, 87, 0.16);
+  box-shadow:
+    var(--neon-glow),
+    0 18px 32px rgba(63, 25, 87, 0.16);
+}
+.group-card-featured {
+  cursor: pointer;
+}
+.group-card-featured:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
 }
 .group-card-link:focus-visible {
   outline: 3px solid var(--accent);
@@ -461,7 +473,11 @@ main {
 .group-card .group-tags span,
 .group-card .group-tags a {
   border: 1px solid rgba(119, 35, 163, 0.25);
-  background: linear-gradient(135deg, rgba(125, 28, 175, 0.11), rgba(68, 22, 112, 0.09));
+  background: linear-gradient(
+    135deg,
+    rgba(125, 28, 175, 0.11),
+    rgba(68, 22, 112, 0.09)
+  );
   box-shadow: inset 0 0 9px rgba(94, 25, 137, 0.06);
   color: #7d1caf;
 }
@@ -1336,6 +1352,20 @@ main {
 }
 
 @media (max-width: 680px) {
+  .site-logo {
+    min-width: 0;
+    max-width: calc(100% - 54px);
+    gap: 5px;
+    font-size: clamp(0.78rem, 4vw, 1rem);
+    letter-spacing: -0.35px;
+    line-height: 1.05;
+    white-space: nowrap;
+  }
+  .site-logo img {
+    width: 22px;
+    height: 22px;
+    flex-basis: 22px;
+  }
   .topo {
     justify-content: space-between;
     padding: 18px 20px;
@@ -1492,8 +1522,25 @@ main {
     min-height: 240px;
     max-height: 310px;
   }
+  .details-join-button {
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: space-between;
+  }
+  .group-details-content > .like-control {
+    display: block;
+    margin: 14px 0 0;
+  }
   .group-card-actions {
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .group-card-actions .group-card-action {
+    flex-basis: 100%;
+    min-height: 32px;
+  }
+  .group-card-actions .like-control {
+    margin-left: auto;
   }
   .group-like-button.is-compact {
     min-height: 31px;
