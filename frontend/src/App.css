@@ -1525,7 +1525,7 @@ main {
   }
   .hero h1 .gradient-roxo {
     display: block;
-    margin-top: 4px;
+    margin-top: 0;
   }
   .cards-container {
     gap: 12px;
