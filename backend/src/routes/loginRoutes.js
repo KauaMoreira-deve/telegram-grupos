@@ -54,6 +54,7 @@ router.post('/login', noStore, loginLimiter, async (req, res) => {
   } catch (error) {
     console.error('Erro ao processar login.', { code: error.code, name: error.name });
     return res.status(500).json({ erro: 'Erro ao realizar login.' });
+
   }
 });
 
