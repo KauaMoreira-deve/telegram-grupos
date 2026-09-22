@@ -610,8 +610,8 @@ function LandingPage() {
           <h1><strong>{isCategoryPage ? <>Grupos de {categoryLabel} no <span className="gradient-roxo">Telegram +18</span></> : <>Grupos adultos no Telegram: <span className="gradient-roxo">links ativos +18</span></>}</strong></h1>
 
           <p>{isCategoryPage
-            ? <>Explore <strong className="color-text">grupos de {categoryLabel} no Telegram</strong> destinados a maiores de 18 anos. Compare descrições, número de membros e acesse comunidades adultas da categoria.</>
-            : <>Encontre <strong className="color-text">grupos adultos e canais +18 no Telegram</strong> organizados por categoria. Consulte descrições, número de membros e links de acesso em um diretório gratuito, sem cadastro.</>}</p>
+            ? <>Explore <strong className="color-text">Putaria no Telegram:</strong> Grupos verificados e ativos +18</>
+            : <>Encontre Acervo de <strong className="color-text">grupos de putaria no Telegram</strong> com <strong className='color-text'>verificação automática</strong>: links mortos ou expirados são detectados e removidos na hora. Só grupos que realmente funcionam. Amadoras, novinhas, casais, gays, gravidas e muito mais — Tenha acesso a grupos gratuitos com diversos conteúdos de sua preferência sem cadastro nenhum.}</p>
           <div className="btn-container">
             <Button className='buttontransparent' href="/adicionar-grupo">Adicione seu grupo</Button>
             <Button href="#groups">Ver grupos</Button>

@@ -5,7 +5,7 @@
   background: rgba(0, 0, 0, 0.76);
   backdrop-filter: blur(14px);
   box-shadow: 0 5px 20px rgba(22, 7, 32, 0.18);
-  overflow: clip;
+  overflow: visible;
 }
 
 .topo {
@@ -1433,7 +1433,7 @@ main {
   }
   .site-menu-overlay {
     position: fixed;
-    z-index: 20;
+    z-index: 1000;
     inset: 0;
     display: block;
     border: 0;
@@ -1441,7 +1441,7 @@ main {
   }
   .site-mobile-menu {
     position: fixed;
-    z-index: 21;
+    z-index: 1001;
     top: 0;
     right: 0;
     display: block;
@@ -1506,13 +1506,16 @@ main {
     width: 100%;
   }
   .btn-container .hero-submit-button {
-    min-height: 72px;
-    padding: 0 20px;
-    border-radius: 19px;
-    font-size: 1.22rem;
+    min-height: 58px;
+    padding: 0 16px;
+    border-radius: 15px;
+    font-size: 1rem;
   }
   .btn-container .hero-groups-button {
-    min-height: 46px;
+    min-height: 40px;
+    padding: 0 18px;
+    border-radius: 10px;
+    font-size: 0.82rem;
   }
   .hero h1 {
     letter-spacing: -1.6px;
