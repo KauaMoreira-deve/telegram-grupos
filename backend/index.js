@@ -2,7 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import express from 'express';
-import conexao from './src/config/database.js';
+import conexao, { testConnection } from './src/config/database.js';
 import { env } from './src/config/env.js';
 import { runMigrations } from './src/config/migrations.js';
 import {
@@ -74,6 +74,7 @@ app.use(errorHandler);
 
 let server;
 let startPromise;
+let encerrando = false;
 
 function closeServer(httpServer) {
   if (!httpServer?.listening) return Promise.resolve();
@@ -89,46 +90,57 @@ function closeServer(httpServer) {
 export function startServer() {
   if (startPromise) return startPromise;
 
-  startPromise = new Promise((resolve, reject) => {
-    const httpServer = app.listen(env.port, env.host);
-    server = httpServer;
+  startPromise = (async () => {
+    // 1. Testa a conexão com o banco antes de aceitar requisições.
+    await testConnection();
 
-    httpServer.requestTimeout = 15_000;
-    httpServer.headersTimeout = 10_000;
-    httpServer.keepAliveTimeout = 5_000;
-    httpServer.maxRequestsPerSocket = 1_000;
-
-    function handleStartupError(error) {
-      httpServer.off('listening', handleListening);
-      reject(error);
-    }
-
-    function handleListening() {
-      httpServer.off('error', handleStartupError);
-      console.log(`Servidor iniciado na porta ${env.port} (${env.nodeEnv}).`);
-      resolve(httpServer);
-    }
-
-    httpServer.once('error', handleStartupError);
-    httpServer.once('listening', handleListening);
-  }).then(async (httpServer) => {
+    // 2. Executa migrations, se configurado.
     if (env.runMigrations) await runMigrations();
+
+    // 3. Inicia o servidor HTTP somente após o banco estar disponível.
+    const httpServer = await new Promise((resolve, reject) => {
+      const s = app.listen(env.port, env.host);
+      server = s;
+
+      s.requestTimeout = 15_000;
+      s.headersTimeout = 10_000;
+      s.keepAliveTimeout = 5_000;
+      s.maxRequestsPerSocket = 1_000;
+
+      function handleStartupError(error) {
+        s.off('listening', handleListening);
+        reject(error);
+      }
+
+      function handleListening() {
+        s.off('error', handleStartupError);
+        resolve(s);
+      }
+
+      s.once('error', handleStartupError);
+      s.once('listening', handleListening);
+    });
+
+    console.log(`Servidor iniciado na porta ${env.port} (${env.nodeEnv}).`);
     return httpServer;
-  }).catch(async (error) => {
+  })().catch(async (error) => {
     try {
       await closeServer(server);
     } catch (closeError) {
       console.error('Não foi possível encerrar o servidor após a falha de inicialização.', {
+        message: closeError.message,
         code: closeError.code,
-        name: closeError.name,
       });
     }
     try {
-      await conexao.end();
+      if (!encerrando) {
+        encerrando = true;
+        await conexao.end();
+      }
     } catch (databaseError) {
       console.error('Não foi possível encerrar o banco após a falha de inicialização.', {
+        message: databaseError.message,
         code: databaseError.code,
-        name: databaseError.name,
       });
     }
     throw error;
@@ -138,12 +150,25 @@ export function startServer() {
 }
 
 async function shutdown(signal) {
+  if (encerrando) return;
+  encerrando = true;
+
   console.log(`Encerrando o servidor (${signal}).`);
   const forceExit = setTimeout(() => process.exit(1), 10_000);
   forceExit.unref();
 
-  if (server) await closeServer(server);
-  await conexao.end();
+  try {
+    if (server) await closeServer(server);
+  } catch (error) {
+    console.error('Erro ao fechar servidor HTTP:', error.message);
+  }
+
+  try {
+    await conexao.end();
+  } catch (error) {
+    console.error('Erro ao fechar conexão com banco:', error.message);
+  }
+
   process.exit(0);
 }
 
@@ -151,9 +176,12 @@ if (env.nodeEnv !== 'test' && !process.env.NODE_TEST_CONTEXT) {
   process.once('SIGTERM', () => void shutdown('SIGTERM'));
   process.once('SIGINT', () => void shutdown('SIGINT'));
   void startServer().catch((error) => {
-    console.error('Não foi possível iniciar o servidor.', {
+    console.error('Não foi possível iniciar o servidor:', {
+      message: error.message,
       code: error.code,
-      name: error.name,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      stack: error.stack,
     });
     process.exitCode = 1;
   });
