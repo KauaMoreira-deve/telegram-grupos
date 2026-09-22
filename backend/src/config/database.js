@@ -22,14 +22,4 @@ const conexao = mysql.createPool({
     : {}),
 });
 
-/**
- * Testa a conectividade com o banco obtendo e liberando uma conexão do pool.
- * Deve ser chamado durante a inicialização para falhar cedo caso o banco
- * esteja inacessível.
- */
-export async function testConnection() {
-  const connection = await conexao.getConnection();
-  connection.release();
-}
-
 export default conexao;

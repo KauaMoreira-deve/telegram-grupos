@@ -2,7 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import express from 'express';
-import conexao, { testConnection } from './src/config/database.js';
+import conexao from './src/config/database.js';
 import { env } from './src/config/env.js';
 import { runMigrations } from './src/config/migrations.js';
 import {
@@ -21,6 +21,28 @@ const projectDirectory = path.dirname(fileURLToPath(import.meta.url));
 const frontendDistDirectory = path.resolve(projectDirectory, '../frontend/dist');
 const frontendIndexFile = path.join(frontendDistDirectory, 'index.html');
 
+// ── Estado de prontidão ──────────────────────────────────────────────
+// O servidor começa a escutar imediatamente (requisito Hostinger: < 3 s),
+// mas endpoints que dependem do banco ficam bloqueados até que as migrations
+// terminem e a conexão esteja validada.
+let ready = false;
+let startupError = null;
+
+function readinessGate(_req, res, next) {
+  if (ready) return next();
+  if (startupError) {
+    return res.status(503).json({
+      status: 'error',
+      message: 'Servidor ainda não está pronto. Inicialização falhou.',
+    });
+  }
+  return res.status(503).json({
+    status: 'starting',
+    message: 'Servidor ainda está iniciando. Tente novamente em alguns segundos.',
+  });
+}
+
+// ── Middlewares globais ──────────────────────────────────────────────
 app.disable('x-powered-by');
 app.set('trust proxy', env.trustProxy);
 app.use(securityHeaders);
@@ -41,11 +63,13 @@ app.use(cors({
   optionsSuccessStatus: 204,
 }));
 
+// ── Health check (sempre disponível, inclusive durante startup) ──────
 app.get('/api/health', (_req, res) => {
   res.setHeader('Cache-Control', 'no-store');
-  res.json({ status: 'ok' });
+  res.json({ status: ready ? 'ok' : 'starting' });
 });
 
+// ── Rate limiter + body parser ──────────────────────────────────────
 app.use('/api', createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 500,
@@ -53,6 +77,10 @@ app.use('/api', createRateLimiter({
 }));
 app.use(express.json({ limit: '64kb', strict: true }));
 
+// ── Gate de prontidão: bloqueia rotas do banco até migrations terminarem ─
+app.use('/api', readinessGate);
+
+// ── Rotas ───────────────────────────────────────────────────────────
 app.use('/api', loginRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/public', publicRoutes);
@@ -72,6 +100,7 @@ if (env.isProduction) {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
+// ── Ciclo de vida ───────────────────────────────────────────────────
 let server;
 let startPromise;
 let encerrando = false;
@@ -91,13 +120,8 @@ export function startServer() {
   if (startPromise) return startPromise;
 
   startPromise = (async () => {
-    // 1. Testa a conexão com o banco antes de aceitar requisições.
-    await testConnection();
-
-    // 2. Executa migrations, se configurado.
-    if (env.runMigrations) await runMigrations();
-
-    // 3. Inicia o servidor HTTP somente após o banco estar disponível.
+    // 1. Inicia o servidor HTTP IMEDIATAMENTE para satisfazer o requisito
+    //    de tempo da Hostinger (app.listen() em menos de 3 segundos).
     const httpServer = await new Promise((resolve, reject) => {
       const s = app.listen(env.port, env.host);
       server = s;
@@ -122,28 +146,39 @@ export function startServer() {
     });
 
     console.log(`Servidor iniciado na porta ${env.port} (${env.nodeEnv}).`);
+
+    // 2. Testa a conexão com o banco.
+    const connection = await conexao.getConnection();
+    connection.release();
+    console.log('Conexão com o banco de dados validada.');
+
+    // 3. Executa migrations pendentes, se configurado.
+    if (env.runMigrations) {
+      const executed = await runMigrations();
+      if (executed.length > 0) {
+        console.log(`Migrations executadas: ${executed.join(', ')}`);
+      } else {
+        console.log('Banco de dados já está atualizado.');
+      }
+    }
+
+    // 4. Libera os endpoints para uso.
+    ready = true;
+    console.log('Servidor pronto para receber requisições.');
+
     return httpServer;
   })().catch(async (error) => {
-    try {
-      await closeServer(server);
-    } catch (closeError) {
-      console.error('Não foi possível encerrar o servidor após a falha de inicialização.', {
-        message: closeError.message,
-        code: closeError.code,
-      });
-    }
-    try {
-      if (!encerrando) {
-        encerrando = true;
-        await conexao.end();
-      }
-    } catch (databaseError) {
-      console.error('Não foi possível encerrar o banco após a falha de inicialização.', {
-        message: databaseError.message,
-        code: databaseError.code,
-      });
-    }
-    throw error;
+    startupError = error;
+    console.error('Falha durante a inicialização:', {
+      message: error.message,
+      code: error.code,
+      errno: error.errno,
+      sqlState: error.sqlState,
+      stack: error.stack,
+    });
+    // Não derruba o processo — o servidor continua respondendo 503
+    // para que a Hostinger não fique reiniciando infinitamente.
+    // O health check retorna { status: 'starting' } para monitoramento.
   });
 
   return startPromise;
@@ -175,16 +210,7 @@ async function shutdown(signal) {
 if (env.nodeEnv !== 'test' && !process.env.NODE_TEST_CONTEXT) {
   process.once('SIGTERM', () => void shutdown('SIGTERM'));
   process.once('SIGINT', () => void shutdown('SIGINT'));
-  void startServer().catch((error) => {
-    console.error('Não foi possível iniciar o servidor:', {
-      message: error.message,
-      code: error.code,
-      errno: error.errno,
-      sqlState: error.sqlState,
-      stack: error.stack,
-    });
-    process.exitCode = 1;
-  });
+  void startServer();
 }
 
 export { app };
