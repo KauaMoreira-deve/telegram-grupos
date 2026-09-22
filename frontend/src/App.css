@@ -1522,12 +1522,9 @@ main {
     margin-bottom: 20px;
     margin-right: auto;
     margin-left: auto;
-    font-family: "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
     font-size: clamp(1.9rem, 8.8vw, 2.35rem);
-    font-weight: 900;
     letter-spacing: -1.3px;
     line-height: 1.06;
-    -webkit-text-stroke: 0.2px currentColor;
   }
   .hero h1 .gradient-roxo {
     display: block;
@@ -1537,10 +1534,6 @@ main {
     max-width: 320px;
     font-size: 1rem;
     line-height: 1.5;
-  }
-  .btn-container .telegram-button {
-    font-family: "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
-    font-weight: 900;
   }
   .cards-container {
     gap: 12px;
