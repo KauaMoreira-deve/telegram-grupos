@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Build e inicialização do frontend e backend no mesmo deploy.",
   "engines": {
-    "node": ">=22.19"
+    "node": ">=22.18"
   },
   "workspaces": [
     "backend",
