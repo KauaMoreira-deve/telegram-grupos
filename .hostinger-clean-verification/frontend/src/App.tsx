@@ -613,7 +613,7 @@ function LandingPage() {
             ? <>Explore <strong className="color-text">grupos de {categoryLabel} no Telegram</strong> destinados a maiores de 18 anos. Compare descrições, número de membros e acesse comunidades adultas da categoria.</>
             : <>Encontre <strong className="color-text">grupos adultos e canais +18 no Telegram</strong> organizados por categoria. Consulte descrições, número de membros e links de acesso em um diretório gratuito, sem cadastro.</>}</p>
           <div className="btn-container">
-            <Button href="/adicionar-grupo">Adicione seu grupo</Button>
+            <Button className='buttontransparent' href="/adicionar-grupo">Adicione seu grupo</Button>
             <Button href="#groups">Ver grupos</Button>
           </div>
           <div className="cards-container">

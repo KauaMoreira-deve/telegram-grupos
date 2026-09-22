@@ -458,11 +458,10 @@ function GroupCard({ group, onAccess, onLiked }: { group: PublicGroup; onAccess:
   function openCard(event: React.MouseEvent<HTMLElement>) {
     if ((event.target as HTMLElement).closest('a, button')) return;
     if (isFeatured) {
-      const canOpenGroup = hasOpenedTelegramFolder();
       const safeGroupLink = safeTelegramUrl(group.link);
-      window.open(canOpenGroup && safeGroupLink ? safeGroupLink : telegramFolderUrl, '_blank', 'noopener,noreferrer');
-      if (canOpenGroup && safeGroupLink) onAccess(group.id);
-      else markTelegramFolderAsOpened();
+      if (!safeGroupLink) return;
+      onAccess(group.id);
+      window.location.assign(safeGroupLink);
       return;
     }
     navigate(groupPath(group));
@@ -480,7 +479,7 @@ function GroupCard({ group, onAccess, onLiked }: { group: PublicGroup; onAccess:
       {isFeatured ? <GroupCardContent group={group} /> : <Link aria-label={`Ver detalhes do grupo ${group.name}`} className="group-card-link" to={groupPath(group)}><GroupCardContent group={group} /></Link>}
       <div className="group-card-actions">
         {isFeatured
-          ? <a className="group-card-action" href={hasOpenedTelegramFolder() ? group.link : telegramFolderUrl} onClick={(event) => handleTelegramGroupLink(event, group.link, () => onAccess(group.id))} rel="ugc nofollow noopener noreferrer" target="_blank">Acessar grupo <span aria-hidden="true">-&gt;</span></a>
+          ? <a className="group-card-action" href={group.link} onClick={() => onAccess(group.id)} rel="ugc nofollow noopener noreferrer">Acessar grupo <span aria-hidden="true">-&gt;</span></a>
           : <Link className="group-card-action" to={groupPath(group)}>Ver detalhes <span aria-hidden="true">-&gt;</span></Link>}
         <LikeButton compact group={group} onLiked={onLiked} />
         <ShareActions compact group={group} />
@@ -635,8 +634,8 @@ function LandingPage() {
               ? <>Explore <strong className="color-text">grupos de {categoryLabel} no Telegram</strong> destinados a maiores de 18 anos. Compare descrições, número de membros e acesse comunidades adultas da categoria.</>
               : <>Encontre <strong className="color-text">grupos adultos e canais +18 no Telegram</strong> organizados por categoria. Consulte descrições, número de membros e links de acesso em um diretório gratuito, sem cadastro.</>}</p>
             <div className="btn-container">
-              <Button href="/adicionar-grupo">Adicione seu grupo</Button>
-              <Button href="#groups">Ver grupos</Button>
+              <Button className="hero-submit-button" href="/adicionar-grupo">+ Enviar meu grupo</Button>
+              <Button className="hero-groups-button" href="#groups">Ver grupos</Button>
             </div>
             <div className="cards-container">
               <Cards numero={stats.totalGroups || groups.length} descricao="Grupos ativos" />

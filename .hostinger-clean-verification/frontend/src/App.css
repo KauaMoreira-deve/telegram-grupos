@@ -115,6 +115,13 @@ main {
   font-weight: 700;
 }
 
+
+.buttontransparent{
+opacity: 0.6;
+background-color: white;
+
+}
+
 .hero h1 {
   max-width: 1060px;
   margin: 0 auto 18px;

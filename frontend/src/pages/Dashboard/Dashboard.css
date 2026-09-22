@@ -764,16 +764,191 @@ body {
   }
 
   .table-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
-  .data-table {
-    min-width: 760px;
+  .data-table,
+  .data-table tbody,
+  .data-table tr,
+  .data-table td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
   }
 
-  .submissions-table {
-    min-width: 900px;
+  .data-table thead {
+    display: none;
+  }
+
+  .data-table tbody tr {
+    margin-bottom: 12px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-surface);
+  }
+
+  .data-table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .data-table tbody td {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 30px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  .data-table tbody td::before {
+    flex: 0 0 35%;
+    color: var(--text-muted);
+    content: attr(data-label);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .data-table tbody td:last-child {
+    border-bottom: 0;
+  }
+
+  .data-table tbody .empty-state {
+    display: block;
+    min-height: 0;
+    padding: 28px 8px !important;
+    text-align: center;
+  }
+
+  .data-table tbody .empty-state::before {
+    display: none;
+  }
+
+  .data-table .actions-cell {
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .data-table .actions-cell::before {
+    margin-right: auto;
+  }
+
+  .data-table .actions-cell .btn-icon {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .data-table .table-detail {
+    max-width: 62%;
+    text-align: right;
+  }
+
+  .dashboard-groups .data-table td:nth-child(1)::before {
+    content: "Nome";
+  }
+  .dashboard-groups .data-table td:nth-child(2)::before {
+    content: "Categoria";
+  }
+  .dashboard-groups .data-table td:nth-child(3)::before {
+    content: "Status";
+  }
+  .dashboard-groups .data-table td:nth-child(4)::before {
+    content: "Destaque";
+  }
+  .dashboard-groups .data-table td:nth-child(5)::before {
+    content: "Cadastro";
+  }
+  .dashboard-groups .data-table td:nth-child(6)::before {
+    content: "Membros";
+  }
+  .dashboard-groups .data-table td:nth-child(7)::before {
+    content: "Acessos";
+  }
+  .dashboard-groups .data-table td:nth-child(8)::before {
+    content: "Ações";
+  }
+
+  .dashboard-categories .data-table td:nth-child(1)::before {
+    content: "Nome";
+  }
+  .dashboard-categories .data-table td:nth-child(2)::before {
+    content: "URL";
+  }
+  .dashboard-categories .data-table td:nth-child(3)::before {
+    content: "Status";
+  }
+  .dashboard-categories .data-table td:nth-child(4)::before {
+    content: "Grupos";
+  }
+  .dashboard-categories .data-table td:nth-child(5)::before {
+    content: "Ações";
+  }
+
+  .dashboard-submissions .data-table td:nth-child(1)::before {
+    content: "Grupo";
+  }
+  .dashboard-submissions .data-table td:nth-child(2)::before {
+    content: "Categoria";
+  }
+  .dashboard-submissions .data-table td:nth-child(3)::before {
+    content: "Contato";
+  }
+  .dashboard-submissions .data-table td:nth-child(4)::before {
+    content: "Enviado";
+  }
+  .dashboard-submissions .data-table td:nth-child(5)::before {
+    content: "Status";
+  }
+  .dashboard-submissions .data-table td:nth-child(6)::before {
+    content: "Ações";
+  }
+
+  .dashboard-home .data-table td:nth-child(1)::before {
+    content: "Grupo";
+  }
+  .dashboard-home .data-table td:nth-child(2)::before {
+    content: "Categoria";
+  }
+  .dashboard-home .data-table td:nth-child(3)::before {
+    content: "Status";
+  }
+  .dashboard-home .data-table td:nth-child(4)::before {
+    content: "Data";
+  }
+
+  .dashboard-users .data-table td:nth-child(1)::before {
+    content: "Nome";
+  }
+  .dashboard-users .data-table td:nth-child(2)::before {
+    content: "E-mail";
+  }
+  .dashboard-users .data-table td:nth-child(3)::before {
+    content: "Perfil";
+  }
+  .dashboard-users .data-table td:nth-child(4)::before {
+    content: "Status";
+  }
+  .dashboard-users .data-table td:nth-child(5)::before {
+    content: "Ações";
+  }
+
+  .data-table tbody td strong,
+  .data-table
+    tbody
+    td
+    > span:not(.badge-category):not(.badge-status):not(.badge-featured),
+  .data-table tbody td > a {
+    max-width: 62%;
   }
 
   .form-container {
