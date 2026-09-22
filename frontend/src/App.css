@@ -144,8 +144,8 @@ main {
 
 .btn-container .hero-submit-button,
 .btn-container .hero-groups-button {
-  flex: 1 1 0;
-  width: 180px;
+  flex: 0 0 auto;
+  width: 220px;
   min-width: 0;
   min-height: 48px;
   padding: 0 16px;
@@ -1500,7 +1500,8 @@ main {
   }
   .btn-container .hero-submit-button,
   .btn-container .hero-groups-button {
-    width: 100%;
+    width: min(100%, 220px);
+    align-self: center;
   }
   .btn-container .hero-submit-button {
     min-height: 40px;
