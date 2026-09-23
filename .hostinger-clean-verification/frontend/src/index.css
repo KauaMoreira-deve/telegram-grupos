@@ -1,21 +1,21 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
+  --text: #eadff0;
+  --text-h: #fffaff;
+  --bg: #210b2d;
+  --border: rgba(236, 210, 246, 0.2);
+  --code-bg: #2c103b;
+  --accent: #e173ff;
+  --accent-bg: rgba(225, 115, 255, 0.16);
+  --accent-border: rgba(225, 115, 255, 0.55);
   --neon-gradient: linear-gradient(135deg, #841bb4 0%, #64108f 50%, #3c0d68 100%);
   --neon-gradient-horizontal: linear-gradient(90deg, #8c24ba 0%, #671194 48%, #43106f 100%);
   --neon-glow: 0 0 12px rgba(117, 28, 169, 0.28), 0 0 28px rgba(74, 21, 121, 0.2);
   --neon-glow-strong: 0 0 12px rgba(126, 30, 179, 0.38), 0 0 28px rgba(75, 17, 124, 0.3), 0 10px 24px rgba(45, 12, 66, 0.2);
-  --surface-glass: rgba(255, 255, 255, 0.9);
-  --surface-strong: rgba(255, 255, 255, 0.97);
-  --social-bg: rgba(244, 243, 236, 0.5);
+  --surface-glass: rgba(34, 9, 47, 0.92);
+  --surface-strong: rgba(30, 8, 42, 0.98);
+  --social-bg: rgba(52, 18, 67, 0.78);
   --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+    rgba(10, 1, 15, 0.34) 0 10px 20px -4px, rgba(10, 1, 15, 0.24) 0 4px 8px -3px;
 
   --sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   --heading: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
@@ -23,7 +23,7 @@
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
-  color-scheme: only light;
+  color-scheme: only dark;
   color: var(--text);
   background: var(--bg);
   font-synthesis: weight;
@@ -41,7 +41,7 @@
 html {
   min-height: 100%;
   scroll-behavior: smooth;
-  background: #faf7fc;
+  background: #210b2d;
 }
 
 body {
@@ -52,9 +52,9 @@ body {
   font-family: var(--sans);
   font-weight: 500;
   background:
-    radial-gradient(circle at 12% 18%, rgba(190, 39, 220, 0.22), transparent 25rem),
-    radial-gradient(circle at 88% 72%, rgba(190, 39, 220, 0.22), transparent 30rem),
-    #faf7fc;
+    radial-gradient(circle at 12% 12%, rgba(226, 72, 244, 0.4), transparent 27rem),
+    radial-gradient(circle at 88% 72%, rgba(166, 48, 218, 0.34), transparent 32rem),
+    linear-gradient(155deg, #59186f 0%, #351046 48%, #210b2d 100%);
   background-attachment: fixed;
 }
 

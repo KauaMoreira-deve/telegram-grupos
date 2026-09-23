@@ -76,3 +76,13 @@
     line-height: 1.22;
   }
 }
+
+@media (min-width: 403px) and (max-width: 680px) {
+  .card h3 {
+    font-size: 20px;
+  }
+
+  .card p {
+    font-size: 10.7px;
+  }
+}
