@@ -17,19 +17,21 @@
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  --heading: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
-  color-scheme: light dark;
+  color-scheme: only light;
   color: var(--text);
   background: var(--bg);
-  font-synthesis: none;
+  font-synthesis: weight;
   text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 
   @media (max-width: 1024px) {
     font-size: 16px;
@@ -37,48 +39,23 @@
 }
 
 html {
+  min-height: 100%;
   scroll-behavior: smooth;
+  background: #faf7fc;
 }
 
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  color: var(--text);
+  font-family: var(--sans);
+  font-weight: 500;
   background:
     radial-gradient(circle at 12% 18%, rgba(190, 39, 220, 0.22), transparent 25rem),
     radial-gradient(circle at 88% 72%, rgba(190, 39, 220, 0.22), transparent 30rem),
     #faf7fc;
   background-attachment: fixed;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --neon-gradient: linear-gradient(135deg, #8f32ba 0%, #681d92 50%, #431069 100%);
-    --neon-gradient-horizontal: linear-gradient(90deg, #9b42c2 0%, #70239a 48%, #491370 100%);
-    --neon-glow: 0 0 12px rgba(151, 60, 192, 0.34), 0 0 28px rgba(83, 29, 126, 0.25);
-    --neon-glow-strong: 0 0 12px rgba(161, 67, 202, 0.42), 0 0 30px rgba(91, 29, 137, 0.34), 0 12px 28px rgba(0, 0, 0, 0.32);
-    --surface-glass: rgba(22, 23, 29, 0.9);
-    --surface-strong: rgba(22, 23, 29, 0.97);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  body {
-    background:
-      radial-gradient(circle at 12% 18%, rgba(190, 39, 220, 0.2), transparent 25rem),
-      radial-gradient(circle at 88% 72%, rgba(190, 39, 220, 0.2), transparent 30rem),
-      #0d0d12;
-    background-attachment: fixed;
-  }
 }
 
 #root {

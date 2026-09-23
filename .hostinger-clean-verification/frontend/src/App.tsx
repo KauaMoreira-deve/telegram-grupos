@@ -611,7 +611,7 @@ function LandingPage() {
 
           <p>{isCategoryPage
             ? <>Explore <strong className="color-text">Putaria no Telegram:</strong> Grupos verificados e ativos +18</>
-            : <>Encontre Acervo de <strong className="color-text">grupos de putaria no Telegram</strong> com <strong className='color-text'>verificação automática</strong>: links mortos ou expirados são detectados e removidos na hora. Só grupos que realmente funcionam. Amadoras, novinhas, casais, gays, gravidas e muito mais — Tenha acesso a grupos gratuitos com diversos conteúdos de sua preferência sem cadastro nenhum.}</p>
+            : <>Encontre Acervo de <strong className="color-text">grupos de putaria no Telegram</strong> com <strong className='color-text'>verificação automática</strong>: links mortos ou expirados são detectados e removidos na hora. Só grupos que realmente funcionam. Amadoras, novinhas, casais, gays, gravidas e muito mais — Tenha acesso a grupos gratuitos com diversos conteúdos de sua preferência sem cadastro nenhum.</>}</p>
           <div className="btn-container">
             <Button className='buttontransparent' href="/adicionar-grupo">Adicione seu grupo</Button>
             <Button href="#groups">Ver grupos</Button>
