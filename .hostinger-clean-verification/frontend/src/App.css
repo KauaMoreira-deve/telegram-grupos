@@ -1297,6 +1297,44 @@ main {
   min-height: 44px;
 }
 
+.group-about {
+  margin-top: 48px;
+  padding-top: 34px;
+  border-top: 1px solid var(--border);
+}
+
+.group-about h2 {
+  margin: 0 0 16px;
+  color: var(--text-h);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  font-weight: 850;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.group-about p {
+  max-width: 900px;
+  margin: 0;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.group-about p + p {
+  margin-top: 12px;
+}
+
+.group-about a {
+  color: var(--accent);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.group-about a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .details-status {
   min-height: 300px;
   display: grid;

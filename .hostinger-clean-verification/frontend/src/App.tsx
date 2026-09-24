@@ -933,27 +933,34 @@ function GroupDetailsPage() {
           </div>
         )}
         {group && (
-          <div className="group-details-card">
-            <img alt={`Imagem do grupo ${group.name}`} className="group-details-image" decoding="async" referrerPolicy="no-referrer" src={group.image || imagemGrupos} />
-            <div className="group-details-content">
-              <span className="details-category">{group.category}</span>
-              <h1>{group.name}</h1>
-              <p className="group-details-description">{group.description}</p>
-              <GroupTags group={group} />
-              <div className="details-info">
-                <div><span>Categoria</span><Link to={`/categorias/${encodeURIComponent(group.categoryUrl)}`}>{group.category}</Link></div>
-                <div><span>Status</span><strong>Grupo verificado</strong></div>
-                <div><span>Data de cadastro</span><strong>{group.createdAt || 'N\u00e3o informada'}</strong></div>
-                <div><span>Membros no Telegram</span><strong>{group.members === null ? 'Indispon\u00edvel' : formatCount(group.members)}</strong></div>
-                <div><span>Acessos pelo site</span><strong>{formatCount(group.accesses)}</strong></div>
+          <>
+            <div className="group-details-card">
+              <img alt={`Imagem do grupo ${group.name}`} className="group-details-image" decoding="async" referrerPolicy="no-referrer" src={group.image || imagemGrupos} />
+              <div className="group-details-content">
+                <span className="details-category">{group.category}</span>
+                <h1>{group.name}</h1>
+                <p className="group-details-description">{group.description}</p>
+                <GroupTags group={group} />
+                <div className="details-info">
+                  <div><span>Categoria</span><Link to={`/categorias/${encodeURIComponent(group.categoryUrl)}`}>{group.category}</Link></div>
+                  <div><span>Status</span><strong>Grupo verificado</strong></div>
+                  <div><span>Data de cadastro</span><strong>{group.createdAt || 'N\u00e3o informada'}</strong></div>
+                  <div><span>Membros no Telegram</span><strong>{group.members === null ? 'Indispon\u00edvel' : formatCount(group.members)}</strong></div>
+                  <div><span>Acessos pelo site</span><strong>{formatCount(group.accesses)}</strong></div>
+                </div>
+                <a className="details-join-button" href={hasOpenedTelegramFolder() ? group.link : telegramFolderUrl} onClick={(event) => handleTelegramGroupLink(event, group.link, registerAccess)} rel="ugc nofollow noopener noreferrer" target="_blank">
+                  Entrar no grupo pelo Telegram <span aria-hidden="true">→</span>
+                </a>
+                <LikeButton group={group} onLiked={updateLikes} />
+                <ShareActions group={group} />
               </div>
-              <a className="details-join-button" href={hasOpenedTelegramFolder() ? group.link : telegramFolderUrl} onClick={(event) => handleTelegramGroupLink(event, group.link, registerAccess)} rel="ugc nofollow noopener noreferrer" target="_blank">
-                Entrar no grupo pelo Telegram <span aria-hidden="true">→</span>
-              </a>
-              <LikeButton group={group} onLiked={updateLikes} />
-              <ShareActions group={group} />
             </div>
-          </div>
+            <section className="group-about" aria-labelledby="group-about-title">
+              <h2 id="group-about-title">Sobre o {group.name}</h2>
+              <p>Grupos de amadoras no Telegram reúnem conteúdo caseiro e real enviado pelos próprios usuários, sem estúdio. Espere fotos e vídeos amadores, pacotes vazados e postagens ao longo do dia.</p>
+              <p>O {group.name} está listado em <Link to="/categorias/amadoras">grupos de amadoras no Telegram</Link> no nosso diretório. Veja mais <Link to="/#groups">categorias</Link> ou confira os <Link to="/#groups">grupos de putaria mais populares</Link> para descobrir canais +18 parecidos.</p>
+            </section>
+          </>
         )}
       </section>
       {relatedGroups.length > 0 && (
