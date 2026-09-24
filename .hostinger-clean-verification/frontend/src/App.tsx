@@ -47,6 +47,18 @@ type SubmissionForm = { nome_grupo: string; id_categoria: string; descricao_grup
 type SortMode = 'recentes' | 'votados' | 'membros' | 'acessados';
 
 const formatCount = (value: number) => new Intl.NumberFormat('pt-BR').format(value);
+
+function formatMonthYear(value: string | null) {
+  if (!value) return '';
+  const brazilianDate = value.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  const isoDate = value.match(/^(\d{4})-(\d{2})/);
+  const year = brazilianDate?.[3] || isoDate?.[1];
+  const month = brazilianDate?.[2] || isoDate?.[2];
+  if (!year || !month) return '';
+  const date = new Date(Date.UTC(Number(year), Number(month) - 1, 1));
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date);
+}
 const emptySubmissionForm: SubmissionForm = { nome_grupo: '', id_categoria: '', descricao_grupo: '', link_telegram: '', nome_contato: '', email_contato: '' };
 const groupsPerPage = 30;
 const telegramFolderUrl = 'https://t.me/addlist/O1xBNBhDJto2ODYx';
@@ -409,6 +421,42 @@ function GroupTags({ group, limit, showCategory = true }: { group: PublicGroup; 
       {showCategory && <Link className="group-category-tag" to={`/categorias/${encodeURIComponent(group.categoryUrl)}`}>{group.category || 'Comunidade'}</Link>}
       {hashtags.map((hashtag) => <span key={hashtag}>#{hashtag}</span>)}
     </div>
+  );
+}
+
+function GroupDetailsFaq({ group }: { group: PublicGroup }) {
+  const groupName = group.name.trim() || 'este grupo';
+  const categoryName = group.category.trim().toLocaleLowerCase('pt-BR') || 'conteúdo adulto';
+  const memberCount = group.members !== null && Number.isFinite(group.members)
+    ? `${formatCount(group.members)} ${group.members === 1 ? 'membro' : 'membros'}`
+    : '';
+  const updateMonth = formatMonthYear(group.membersUpdatedAt || group.createdAt);
+  const membersAnswer = memberCount
+    ? `O ${groupName} tem cerca de ${memberCount}${updateMonth ? ` e este anúncio foi atualizado em ${updateMonth}.` : '.'}`
+    : `A quantidade de membros do ${groupName} está indisponível no momento${updateMonth ? `; este anúncio foi atualizado em ${updateMonth}.` : '.'}`;
+
+  return (
+    <section className="group-details-faq" aria-labelledby="group-details-faq-title">
+      <h2 id="group-details-faq-title">Perguntas frequentes</h2>
+      <div className="group-details-faq-list">
+        <details className="group-details-faq-item" open>
+          <summary>Como entrar no {groupName} no Telegram?</summary>
+          <p>Clique no botão “Entrar no grupo pelo Telegram” nesta página. Você será redirecionado para o Telegram para abrir o {groupName} e entrar de graça — sem cadastro.</p>
+        </details>
+        <details className="group-details-faq-item" open>
+          <summary>O {groupName} é grátis?</summary>
+          <p>Sim. O {groupName} é gratuito, como todo grupo do nosso diretório. Alguns grupos oferecem conteúdo VIP opcional, mas a entrada é sempre grátis.</p>
+        </details>
+        <details className="group-details-faq-item" open>
+          <summary>O {groupName} é seguro e +18?</summary>
+          <p>O {groupName} é um grupo adulto (+18) de {categoryName}, então o conteúdo é só para maiores. Verificamos os links com frequência, mas siga sempre as regras do Telegram e nunca compartilhe conteúdo ilegal.</p>
+        </details>
+        <details className="group-details-faq-item" open>
+          <summary>Quantos membros tem o {groupName}?</summary>
+          <p>{membersAnswer}</p>
+        </details>
+      </div>
+    </section>
   );
 }
 
@@ -957,9 +1005,10 @@ function GroupDetailsPage() {
             </div>
             <section className="group-about" aria-labelledby="group-about-title">
               <h2 id="group-about-title">Sobre o {group.name}</h2>
-              <p>Grupos de amadoras no Telegram reúnem conteúdo caseiro e real enviado pelos próprios usuários, sem estúdio. Espere fotos e vídeos amadores, pacotes vazados e postagens ao longo do dia.</p>
-              <p>O {group.name} está listado em <Link to="/categorias/amadoras">grupos de amadoras no Telegram</Link> no nosso diretório. Veja mais <Link to="/#groups">categorias</Link> ou confira os <Link to="/#groups">grupos de putaria mais populares</Link> para descobrir canais +18 parecidos.</p>
+              <p>Grupos de {group.category.toLocaleLowerCase('pt-BR')} no Telegram reúnem conteúdo caseiro e real enviado pelos próprios usuários, sem estúdio. Espere fotos e vídeos amadores, pacotes vazados e postagens ao longo do dia.</p>
+              <p>O {group.name} está listado em <Link to={`/categorias/${encodeURIComponent(group.categoryUrl)}`}>grupos de {group.category.toLocaleLowerCase('pt-BR')} no Telegram</Link> no nosso diretório. Veja mais <Link to="/#groups">categorias</Link> ou confira os <Link to="/#groups">grupos de putaria mais populares</Link> para descobrir canais +18 parecidos.</p>
             </section>
+            <GroupDetailsFaq group={group} />
           </>
         )}
       </section>

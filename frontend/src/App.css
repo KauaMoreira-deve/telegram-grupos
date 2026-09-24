@@ -1414,6 +1414,57 @@ main {
   text-underline-offset: 3px;
 }
 
+.group-details-faq {
+  margin-top: 48px;
+}
+
+.group-details-faq > h2 {
+  margin: 0 0 18px;
+  color: var(--text-h);
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  font-weight: 850;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.group-details-faq-list {
+  display: grid;
+  gap: 12px;
+}
+
+.group-details-faq-item {
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-strong);
+}
+
+.group-details-faq-item summary {
+  padding: 18px 0;
+  color: var(--text-h);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.group-details-faq-item summary::marker {
+  color: var(--text-h);
+}
+
+.group-details-faq-item[open] summary {
+  padding-bottom: 9px;
+}
+
+.group-details-faq-item p {
+  max-width: 900px;
+  margin: 0;
+  padding: 0 0 18px;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
 .details-status {
   min-height: 300px;
   display: grid;
