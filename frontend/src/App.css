@@ -140,21 +140,6 @@ main {
   margin: 0 auto;
 }
 
-.hero-stat-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 6px 16px;
-  border: 1px solid rgba(190, 39, 220, 0.42);
-  border-radius: 999px;
-  background: rgba(190, 39, 220, 0.1);
-  color: #ead7f3;
-  font-size: 0.875rem;
-  font-weight: 500;
-  line-height: 1.5;
-}
-
 .gradient-roxo {
   background: linear-gradient(135deg, #be27dc, #9600db);
   background-clip: text;
@@ -169,7 +154,7 @@ main {
 
 .hero h1 {
   max-width: 1060px;
-  margin: 24px auto 0;
+  margin: 0 auto;
   color: var(--text-h);
   font-size: clamp(2.3rem, 5vw, 4.5rem);
   font-weight: 900;
@@ -1560,9 +1545,6 @@ main {
     flex-basis: 36px;
     border-radius: 12px;
   }
-  .site-logo-connector {
-    display: none;
-  }
   .topo {
     justify-content: space-between;
     min-height: 64px;
@@ -1676,14 +1658,6 @@ main {
     width: 100%;
     max-width: 48rem;
   }
-  .hero-stat-pill {
-    max-width: 100%;
-    min-height: 36px;
-    padding: 0 15px;
-    box-sizing: border-box;
-    font-size: clamp(12px, 3.8vw, 14px);
-    white-space: nowrap;
-  }
   .btn-container {
     flex-direction: column;
     align-items: stretch;
@@ -1715,7 +1689,7 @@ main {
     position: static;
     width: 100%;
     max-width: none;
-    margin: 24px 0 0;
+    margin: 0;
     transform: none;
     font-size: clamp(33px, 10.5vw, 36px);
     font-weight: 900;

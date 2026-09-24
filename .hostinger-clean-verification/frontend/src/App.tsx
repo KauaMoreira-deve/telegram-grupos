@@ -195,7 +195,7 @@ function SiteHeader() {
   return (
     <header className="site-header">
       <div className="topo">
-        <Link aria-label={`${SITE_NAME} - início`} className="site-logo" to="/"><img src={telegramLogo} alt="" /> Putaria no<span className="gradient-roxo">Telegram</span></Link>
+        <Link aria-label={`${SITE_NAME} - início`} className="site-logo" to="/"><img src={telegramLogo} alt="" /><span>PutariaNo<span className="gradient-roxo">Telegram</span></span></Link>
         <nav aria-label="Navegacao principal" className="desktop-navigation">{navigation}</nav>
         <button aria-controls="mobile-navigation" aria-expanded={menuOpen} aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} className="site-menu-button" onClick={() => setMenuOpen((open) => !open)} type="button">
           {menuOpen ? <X size={24} /> : <Menu size={24} />}

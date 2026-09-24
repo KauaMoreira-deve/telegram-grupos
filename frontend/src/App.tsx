@@ -47,11 +47,6 @@ type SubmissionForm = { nome_grupo: string; id_categoria: string; descricao_grup
 type SortMode = 'recentes' | 'votados' | 'membros' | 'acessados';
 
 const formatCount = (value: number) => new Intl.NumberFormat('pt-BR').format(value);
-const formatCompactCount = (value: number) => {
-  if (value >= 1_000_000) return `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(value / 1_000_000)}M`;
-  if (value >= 1_000) return `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(value / 1_000)} mil`;
-  return formatCount(value);
-};
 const emptySubmissionForm: SubmissionForm = { nome_grupo: '', id_categoria: '', descricao_grupo: '', link_telegram: '', nome_contato: '', email_contato: '' };
 const groupsPerPage = 30;
 const telegramFolderUrl = 'https://t.me/addlist/O1xBNBhDJto2ODYx';
@@ -204,7 +199,7 @@ function SiteHeader() {
           <span aria-hidden="true" className="site-logo-icon">
             <svg viewBox="0 0 24 24"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.27 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" /></svg>
           </span>
-          <span className="site-logo-text">Putaria<span className="site-logo-connector"> no </span><span className="site-logo-accent">Telegram</span></span>
+          <span className="site-logo-text">PutariaNo<span className="site-logo-accent">Telegram</span></span>
         </Link>
         <nav aria-label="Navegacao principal" className="desktop-navigation">{navigation}</nav>
         <Link className="mobile-header-submit" to="/adicionar-grupo">+ Enviar</Link>
@@ -643,7 +638,6 @@ function LandingPage() {
       <main>
         <section className="hero" id="home">
           <div className="hero-content">
-            <span className="hero-stat-pill"><span aria-hidden="true">🔥</span><span>+{formatCompactCount(stats.totalMembers)} membros · {formatCount(stats.totalGroups || groups.length)} grupos ativos</span></span>
             <h1>
               <span className="hero-title-lead">Putaria Telegram:</span>{' '}
               <strong className="gradient-roxo hero-title-accent"><span className="hero-title-line">grupos de putaria</span>{' '}<span className="hero-title-line">verificados +18</span></strong>
