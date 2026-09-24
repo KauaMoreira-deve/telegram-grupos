@@ -188,6 +188,7 @@ function SiteHeader() {
       <li><a href="/#groups" onClick={() => setMenuOpen(false)}>Grupos</a></li>
       <li><Link to="/adicionar-grupo" onClick={() => setMenuOpen(false)}>Adicionar grupo</Link></li>
       <li><a href="/#faq" onClick={() => setMenuOpen(false)}>FAQ</a></li>
+      <li><Link to="/termos-de-uso" onClick={() => setMenuOpen(false)}>Termos de uso</Link></li>
       <li><Button href="/adicionar-grupo">Adicione seu grupo</Button></li>
     </ul>
   );
