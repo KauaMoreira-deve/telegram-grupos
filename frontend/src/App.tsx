@@ -47,6 +47,11 @@ type SubmissionForm = { nome_grupo: string; id_categoria: string; descricao_grup
 type SortMode = 'recentes' | 'votados' | 'membros' | 'acessados';
 
 const formatCount = (value: number) => new Intl.NumberFormat('pt-BR').format(value);
+const formatCompactCount = (value: number) => {
+  if (value >= 1_000_000) return `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(value / 1_000_000)}M`;
+  if (value >= 1_000) return `${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 }).format(value / 1_000)} mil`;
+  return formatCount(value);
+};
 const emptySubmissionForm: SubmissionForm = { nome_grupo: '', id_categoria: '', descricao_grupo: '', link_telegram: '', nome_contato: '', email_contato: '' };
 const groupsPerPage = 30;
 const telegramFolderUrl = 'https://t.me/addlist/O1xBNBhDJto2ODYx';
@@ -195,8 +200,14 @@ function SiteHeader() {
   return (
     <header className="site-header">
       <div className="topo">
-        <Link aria-label={`${SITE_NAME} - início`} className="site-logo" to="/"><img src={telegramLogo} alt="" /> Putaria no<span className="gradient-roxo">Telegram</span></Link>
+        <Link aria-label={`${SITE_NAME} - início`} className="site-logo" to="/">
+          <span aria-hidden="true" className="site-logo-icon">
+            <svg viewBox="0 0 24 24"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.27 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" /></svg>
+          </span>
+          <span className="site-logo-text">Putaria<span className="site-logo-connector"> no </span><span className="site-logo-accent">Telegram</span></span>
+        </Link>
         <nav aria-label="Navegacao principal" className="desktop-navigation">{navigation}</nav>
+        <Link className="mobile-header-submit" to="/adicionar-grupo">+ Enviar</Link>
         <button aria-controls="mobile-navigation" aria-expanded={menuOpen} aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} className="site-menu-button" onClick={() => setMenuOpen((open) => !open)} type="button">
           {menuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -632,14 +643,15 @@ function LandingPage() {
       <main>
         <section className="hero" id="home">
           <div className="hero-content">
+            <span className="hero-stat-pill"><span aria-hidden="true">🔥</span><span>+{formatCompactCount(stats.totalMembers)} membros · {formatCount(stats.totalGroups || groups.length)} grupos ativos</span></span>
             <h1>
-              <span className="hero-title-lead">Putaria no Telegram:</span>{' '}
-              <strong className="gradient-roxo"><span className="hero-title-line">Grupos verificados</span>{' '}<span className="hero-title-line">e ativos +18</span></strong>
+              <span className="hero-title-lead">Putaria Telegram:</span>{' '}
+              <strong className="gradient-roxo hero-title-accent"><span className="hero-title-line">grupos de putaria</span>{' '}<span className="hero-title-line">verificados +18</span></strong>
             </h1>
 
-            <p>Acervo de <strong className='color-text'>grupos de putaria no Telegram</strong> com <strong className='color-text'>verificação automática</strong>: links mortos ou expirados são detectados e removidos na hora. Só grupos que realmente funcionam. Amadoras, novinhas, casais, gays, gravidas e muito mais — Tenha acesso a grupos gratuitos com diversos conteúdos de sua preferência sem cadastro nenhum.</p>
+            <p>O diretório de <strong className="color-text">grupos de putaria no Telegram</strong> com <strong className="color-text">verificação automática de link</strong>: grupo que cai ou expira é detectado e removido, então você só entra em grupo que realmente funciona. Amadoras, novinhas, casais, gays e mais — grátis, +18 e sem cadastro.</p>
             <div className="btn-container">
-              <Button className="hero-groups-button" href="#groups">Ver grupos</Button>
+              <Button className="hero-groups-button" href="#groups">Ver grupos agora</Button>
               <Button className="hero-submit-button" href="/adicionar-grupo">+ Enviar meu grupo</Button>
 
             </div>
