@@ -275,12 +275,16 @@ function SiteFooter() {
 }
 
 function TermsOfUsePage() {
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, []);
+
   return (
     <main className="legal-page">
       <PageMeta description={`Termos de uso do ${SITE_NAME}.`} path="/termos-de-uso" title="Termos de uso" />
-      <article className="legal-content">
+      <article aria-labelledby="terms-title" className="legal-content">
         <span className="legal-eyebrow">INFORMAÇÕES LEGAIS</span>
-        <h1>Termos de uso</h1>
+        <h1 id="terms-title">Termos de uso</h1>
         <p className="legal-updated">Última atualização: 15 de setembro de 2026.</p>
         <p>Ao acessar ou utilizar o {SITE_NAME}, você concorda com estes termos. Caso não concorde, não utilize a plataforma.</p>
 
