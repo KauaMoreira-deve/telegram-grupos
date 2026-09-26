@@ -1776,14 +1776,14 @@ main {
   }
   .hero h1 {
     position: static;
-    width: 100%;
+    width: calc(100% + 24px);
     max-width: none;
-    margin: 0;
+    margin: 0 -12px;
     transform: none;
-    font-size: clamp(24px, 8vw, 36px);
+    font-size: clamp(32px, 10.4vw, 40px);
     font-weight: 900;
-    letter-spacing: -0.025em;
-    line-height: 1.25;
+    letter-spacing: -0.055em;
+    line-height: 1.05;
     text-wrap: balance;
   }
   .hero h1 .gradient-roxo {
@@ -1966,6 +1966,10 @@ main {
 }
 
 @media (max-width: 340px) {
+  .hero h1 {
+    font-size: 10vw;
+  }
+
   .topo {
     padding-inline: 10px;
     gap: 6px;
