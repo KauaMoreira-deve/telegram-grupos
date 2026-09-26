@@ -689,7 +689,7 @@ function LandingPage() {
           <div className="hero-content">
             <h1>
               <strong className="hero-title-lead">Putaria no Telegram:</strong>{' '}
-              <span className="gradient-roxo hero-title-accent">Grupos verificados e ativos +18</span>
+              <span className="gradient-roxo hero-title-accent"><span className="hero-title-line">Grupos verificados</span>{' '}<span className="hero-title-line">e ativos +18</span></span>
             </h1>
 
             <p>Acervo de <strong className="color-text">grupos de putaria no Telegram</strong> com <strong className="color-text">verificação automática</strong>: links mortos ou expirados são detectados e removidos na hora. Só grupos que realmente funcionam. Amadoras, novinhas, casais, gays, gravidas e muito mais — Tenha acesso a grupos gratuitos com diversos conteúdos de sua preferência sem cadastro nenhum.</p>

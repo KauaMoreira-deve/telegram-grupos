@@ -1780,7 +1780,7 @@ main {
     max-width: none;
     margin: 0;
     transform: none;
-    font-size: clamp(33px, 10.5vw, 36px);
+    font-size: clamp(24px, 8vw, 36px);
     font-weight: 900;
     letter-spacing: -0.025em;
     line-height: 1.25;
