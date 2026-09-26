@@ -708,8 +708,9 @@ function LandingPage() {
 
         <section className="groups-section" id="groups">
           <div className="groups-content">
-            <h2>{isCategoryPage ? `Grupos +18 de ${categoryLabel}` : 'Lista de grupos +18 no Telegram'}</h2>
-            <p>{isCategoryPage ? `Comunidades adultas de ${categoryLabel} com links diretos para o Telegram.` : 'Explore grupos de pornô no Telegram, comunidades para adultos, casais, público LGBTQIA+ e outras categorias.'}</p>
+            <h2>Diversos grupos de putaria no Telegram</h2>
+            <p>
+Explore os melhores grupos de porno, putaria, amadoras e muito mais no Telegram. Atualizado em setembro de 2026.</p>
             <div className="group-tools">
               <label className="group-search">
                 <Search aria-hidden="true" size={19} />
