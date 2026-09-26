@@ -208,12 +208,12 @@ function SiteHeader() {
   return (
     <header className="site-header">
       <div className="topo">
-        <Link aria-label={`${SITE_NAME} - início`} className="site-logo" to="/">
+        <a aria-label={`${SITE_NAME} - início`} className="site-logo" href="/">
           <span aria-hidden="true" className="site-logo-icon">
             <svg viewBox="0 0 24 24"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.27 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" /></svg>
           </span>
           <span className="site-logo-text">PutariaNo<span className="site-logo-accent">Telegram</span></span>
-        </Link>
+        </a>
         <nav aria-label="Navegacao principal" className="desktop-navigation">{navigation}</nav>
         <Link className="mobile-header-submit" to="/adicionar-grupo">+ Enviar</Link>
         <button aria-controls="mobile-navigation" aria-expanded={menuOpen} aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} className="site-menu-button" onClick={() => setMenuOpen((open) => !open)} type="button">
@@ -264,7 +264,7 @@ function SiteFooter() {
     <footer className="site-footer">
       <div className="footer-content">
         <div>
-          <Link className="footer-logo" to="/"><img src={telegramLogo} alt="" /> Putaria no <span className="gradient-roxo">Telegram</span></Link>
+          <a className="footer-logo" href="/"><img src={telegramLogo} alt="" /> Putaria no <span className="gradient-roxo">Telegram</span></a>
           <p>Diretório de grupos adultos e canais +18 do Telegram, organizados por categoria.</p>
         </div>
         <div className="footer-links">
@@ -445,19 +445,19 @@ function GroupDetailsFaq({ group }: { group: PublicGroup }) {
     <section className="group-details-faq" aria-labelledby="group-details-faq-title">
       <h2 id="group-details-faq-title">Perguntas frequentes</h2>
       <div className="group-details-faq-list">
-        <details className="group-details-faq-item" open>
+        <details className="group-details-faq-item">
           <summary>Como entrar no {groupName} no Telegram?</summary>
           <p>Clique no botão “Entrar no grupo pelo Telegram” nesta página. Você será redirecionado para o Telegram para abrir o {groupName} e entrar de graça — sem cadastro.</p>
         </details>
-        <details className="group-details-faq-item" open>
+        <details className="group-details-faq-item">
           <summary>O {groupName} é grátis?</summary>
           <p>Sim. O {groupName} é gratuito, como todo grupo do nosso diretório. Alguns grupos oferecem conteúdo VIP opcional, mas a entrada é sempre grátis.</p>
         </details>
-        <details className="group-details-faq-item" open>
+        <details className="group-details-faq-item">
           <summary>O {groupName} é seguro e +18?</summary>
           <p>O {groupName} é um grupo adulto (+18) de {categoryName}, então o conteúdo é só para maiores. Verificamos os links com frequência, mas siga sempre as regras do Telegram e nunca compartilhe conteúdo ilegal.</p>
         </details>
-        <details className="group-details-faq-item" open>
+        <details className="group-details-faq-item">
           <summary>Quantos membros tem o {groupName}?</summary>
           <p>{membersAnswer}</p>
         </details>
@@ -558,7 +558,7 @@ function LandingPage() {
   const [sortMode, setSortMode] = useState<SortMode>('recentes');
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [openFaq, setOpenFaq] = useState(0);
+  const [openFaq, setOpenFaq] = useState(-1);
   const searchParameters = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const selectedCategory = categorySlug || searchParameters.get('categoria') || '';
   const selectedHashtag = searchParameters.get('hashtag') || '';
