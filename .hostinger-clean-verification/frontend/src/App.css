@@ -1661,10 +1661,10 @@ main {
     padding: 62px 20px;
   }
   .groups-content {
-    text-align: center;
+    text-align: left;
   }
   .groups-content > p {
-    margin: 0 auto;
+    margin: 0;
   }
   .group-tools {
     grid-template-columns: 1fr;
