@@ -106,7 +106,7 @@ if (env.isProduction || process.env.SERVE_FRONTEND === 'true') {
     },
   }));
   // Entrega o index.html com título, descrição e canonical corretos para cada rota.
-  app.get('/{*frontendPath}', createPageRenderer({ indexFile: frontendIndexFile }));
+  app.get('/{*frontendPath}', createPageRenderer({ indexFile: frontendIndexFile, cacheTemplate: env.isProduction }));
 }
 
 app.use(notFoundHandler);
