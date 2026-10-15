@@ -1,5 +1,5 @@
 import express from 'express';
-import { approveGroupSubmission, createCategory, createGroup, createUser, deleteCategory, deleteGroup, deleteUser, getCategories, getDashboardStats, getGroup, getGroupCategories, getGroups, getGroupSubmissions, getSiteSettings, getUsers, rejectGroupSubmission, syncGroupMembers, updateCategory, updateGroup, updateOwnProfile, updateSiteSettings, updateUser } from '../controllers/adminController.js';
+import { approveGroupSubmission, createCategory, createGroup, createUser, deleteCategory, deleteGroupSubmission, deleteGroup, deleteUser, getCategories, getDashboardStats, getGroup, getGroupCategories, getGroups, getGroupSubmissions, getSiteSettings, getUsers, rejectGroupSubmission, syncGroupMembers, updateCategory, updateGroup, updateOwnProfile, updateSiteSettings, updateUser } from '../controllers/adminController.js';
 import { requireAuth, requireSuperAdmin } from '../middlewares/authMiddleware.js';
 import { noStore, validateNumericId } from '../middlewares/securityMiddleware.js';
 import { invalidateCache } from '../utils/cache.js';
@@ -36,5 +36,6 @@ router.put('/site-settings', requireSuperAdmin, updateSiteSettings);
 router.get('/group-submissions', getGroupSubmissions);
 router.post('/group-submissions/:id/approve', approveGroupSubmission);
 router.post('/group-submissions/:id/reject', rejectGroupSubmission);
+router.delete('/group-submissions/:id', deleteGroupSubmission);
 
 export default router;

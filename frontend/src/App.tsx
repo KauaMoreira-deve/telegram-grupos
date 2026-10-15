@@ -255,7 +255,7 @@ function SiteHeader() {
 
   const navigation = (
     <ul className="topo-cont">
-      <li><a href="/#home" onClick={() => setMenuOpen(false)}>Inicio</a></li>
+      <li><a href="/#home" onClick={() => setMenuOpen(false)}>Início</a></li>
       <li><a href="/#groups" onClick={() => setMenuOpen(false)}>Grupos</a></li>
       <li><Link to="/categorias" onClick={() => setMenuOpen(false)}>Categorias</Link></li>
       <li><Link to="/adicionar-grupo" onClick={() => setMenuOpen(false)}>Adicionar grupo</Link></li>
@@ -272,16 +272,16 @@ function SiteHeader() {
           <span aria-hidden="true" className="site-logo-icon">
             <svg viewBox="0 0 24 24"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.27 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" /></svg>
           </span>
-          <span className="site-logo-text">PutariaNo<span className="site-logo-accent">Telegram</span></span>
+          <span className="site-logo-text">Putaria no <span className="site-logo-accent">Telegram</span></span>
         </a>
-        <nav aria-label="Navegacao principal" className="desktop-navigation">{navigation}</nav>
+        <nav aria-label="Navegação principal" className="desktop-navigation">{navigation}</nav>
         <Link className="mobile-header-submit" to="/adicionar-grupo">+ Enviar</Link>
         <button aria-controls="mobile-navigation" aria-expanded={menuOpen} aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} className="site-menu-button" onClick={() => setMenuOpen((open) => !open)} type="button">
           {menuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
       {menuOpen && <button aria-label="Fechar menu" className="site-menu-overlay" onClick={() => setMenuOpen(false)} type="button" />}
-      <aside aria-label="Menu de navegacao" className={`site-mobile-menu ${menuOpen ? 'is-open' : ''}`} id="mobile-navigation">
+      <aside aria-label="Menu de navegação" className={`site-mobile-menu ${menuOpen ? 'is-open' : ''}`} id="mobile-navigation">
         <div className="site-mobile-menu-header"><span>Menu</span><button aria-label="Fechar menu" onClick={() => setMenuOpen(false)} type="button"><X size={22} /></button></div>
         <nav>{navigation}</nav>
       </aside>
@@ -324,7 +324,7 @@ function SiteFooter() {
     <footer className="site-footer">
       <div className="footer-content">
         <div>
-          <a className="footer-logo" href="/"><img src={telegramLogo} alt="" /> Putaria no <span className="gradient-roxo">Telegram</span></a>
+          <a className="footer-logo" href="/"><img src={telegramLogo} alt="" /><span>Putaria no <span className="gradient-roxo">Telegram</span></span></a>
           <p>Diretório de grupos adultos e canais +18 do Telegram, organizados por categoria.</p>
         </div>
         <div className="footer-links">
@@ -534,9 +534,9 @@ function GroupDetailsFaq({ group }: { group: PublicGroup }) {
 function ShareActions({ group, compact = false }: { group: PublicGroup; compact?: boolean }) {
   const [copied, setCopied] = useState(false);
   const pageUrl = siteUrl(groupPath(group));
-  const message = `Conheca o grupo ${group.name} no Telegram: ${pageUrl}`;
+  const message = `Conheça o grupo ${group.name} no Telegram: ${pageUrl}`;
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-  const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(pageUrl)}&text=${encodeURIComponent(`Conheca ${group.name}`)}`;
+  const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(pageUrl)}&text=${encodeURIComponent(`Conheça ${group.name}`)}`;
 
   async function copyLink() {
     try {
@@ -551,9 +551,9 @@ function ShareActions({ group, compact = false }: { group: PublicGroup; compact?
   async function shareNatively() {
     if (navigator.share) {
       try {
-        await navigator.share({ title: group.name, text: `Conheca o grupo ${group.name}`, url: pageUrl });
+        await navigator.share({ title: group.name, text: `Conheça o grupo ${group.name}`, url: pageUrl });
       } catch {
-        // O cancelamento do compartilhamento nao precisa de mensagem.
+        // O cancelamento do compartilhamento não precisa de mensagem.
       }
       return;
     }
@@ -603,8 +603,8 @@ function GroupCard({ group, onAccess, onLiked }: { group: PublicGroup; onAccess:
       {isFeatured ? <GroupCardContent group={group} /> : <Link aria-label={`Ver detalhes do grupo ${group.name}`} className="group-card-link" to={groupPath(group)}><GroupCardContent group={group} /></Link>}
       <div className="group-card-actions">
         {isFeatured
-          ? <a className="group-card-action" href={group.link} onClick={() => onAccess(group.id)} rel="ugc nofollow noopener noreferrer">Acessar grupo <span aria-hidden="true">-&gt;</span></a>
-          : <Link className="group-card-action" to={groupPath(group)}>Ver detalhes <span aria-hidden="true">-&gt;</span></Link>}
+          ? <a className="group-card-action" href={group.link} onClick={() => onAccess(group.id)} rel="ugc nofollow noopener noreferrer">Acessar grupo <span aria-hidden="true">→</span></a>
+          : <Link className="group-card-action" to={groupPath(group)}>Ver detalhes <span aria-hidden="true">→</span></Link>}
         <LikeButton compact group={group} onLiked={onLiked} />
         <ShareActions compact group={group} />
       </div>

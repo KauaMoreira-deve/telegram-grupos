@@ -855,6 +855,21 @@ export const rejectGroupSubmission = async (req, res) => {
   }
 };
 
+// Remove apenas o registro da solicitação; grupos já publicados não são afetados.
+export const deleteGroupSubmission = async (req, res) => {
+  try {
+    const [result] = await conexao.query(
+      "DELETE FROM tbl_solicitacao_grupo WHERE id_solicitacao = ?",
+      [req.params.id],
+    );
+    if (!result.affectedRows)
+      return res.status(404).json({ erro: "Solicitação não encontrada." });
+    res.json({ mensagem: "Solicitação excluída." });
+  } catch (error) {
+    databaseError(res, error, "Erro ao excluir solicitação.");
+  }
+};
+
 export const getSiteSettings = async (_req, res) => {
   try {
     res.json({ popunder: await getPopunderSettings() });
