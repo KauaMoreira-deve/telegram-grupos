@@ -114,25 +114,6 @@ main {
   background: transparent;
 }
 
-.hero::before,
-.hero::after {
-  position: absolute;
-  width: 270px;
-  height: 240px;
-  border: 1px solid rgba(190, 39, 220, 0.16);
-  border-radius: 50%;
-  content: "";
-}
-
-.hero::before {
-  top: -130px;
-  right: 10%;
-}
-.hero::after {
-  bottom: -170px;
-  left: 6%;
-}
-
 .hero-content {
   position: relative;
   z-index: 1;
