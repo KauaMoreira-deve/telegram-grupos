@@ -171,6 +171,7 @@ export const getDashboardStats = async (_req, res) => {
       [activeGroups],
       [totalCategories],
       [totalAcessos],
+      [totalPessoas],
       recentGroups,
       [pendingSubmissions],
       [dailyAccesses],
@@ -181,6 +182,7 @@ export const getDashboardStats = async (_req, res) => {
       ),
       conexao.query("SELECT COUNT(*) AS count FROM tbl_categoria"),
       conexao.query("SELECT COUNT(*) AS count FROM tbl_acesso_grupo"),
+      conexao.query("SELECT COUNT(DISTINCT identificador_visitante) AS count FROM tbl_acesso_grupo"),
       conexao.query(
         `SELECT g.id_grupo AS id, g.nome_grupo AS name, c.nome_categoria AS category, g.status_grupo AS status, DATE_FORMAT(g.data_criacao_grupo, '%d/%m/%Y') AS date FROM tbl_grupo_telegram g JOIN tbl_categoria c ON c.id_categoria = g.id_categoria ORDER BY g.id_grupo DESC LIMIT 6`,
       ),
@@ -188,17 +190,18 @@ export const getDashboardStats = async (_req, res) => {
         "SELECT COUNT(*) AS count FROM tbl_solicitacao_grupo WHERE status_solicitacao = 'pendente'",
       ),
       conexao.query(
-        `SELECT DATE_FORMAT(data_acesso, '%Y-%m-%d') AS day, COUNT(*) AS count FROM tbl_acesso_grupo WHERE data_acesso >= CURDATE() - INTERVAL 6 DAY GROUP BY day`,
+        `SELECT DATE_FORMAT(data_acesso, '%Y-%m-%d') AS day, COUNT(*) AS count, COUNT(DISTINCT identificador_visitante) AS people FROM tbl_acesso_grupo WHERE data_acesso >= CURDATE() - INTERVAL 6 DAY GROUP BY day`,
       ),
     ]);
 
     // Acessos dos últimos 7 dias, preenchendo com zero os dias sem registro.
-    const accessesByDay = new Map(dailyAccesses.map((row) => [row.day, Number(row.count) || 0]));
+    const accessesByDay = new Map(dailyAccesses.map((row) => [row.day, row]));
     const accessesLast7Days = Array.from({ length: 7 }, (_, index) => {
       const date = new Date();
       date.setDate(date.getDate() - (6 - index));
       const day = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-      return { day, count: accessesByDay.get(day) || 0 };
+      const row = accessesByDay.get(day);
+      return { day, count: Number(row?.count) || 0, people: Number(row?.people) || 0 };
     });
     res.json({
       stats: {
@@ -206,6 +209,7 @@ export const getDashboardStats = async (_req, res) => {
         activeGroups: activeGroups[0].count,
         totalCategories: totalCategories[0].count,
         totalAcessos: totalAcessos[0].count,
+        totalPessoas: totalPessoas[0].count,
         pendingSubmissions: pendingSubmissions[0].count,
       },
       accessesLast7Days,
@@ -228,11 +232,12 @@ export const getGroups = async (_req, res) => {
         g.destaque_grupo AS featured, g.quantidade_membros AS members,
         DATE_FORMAT(g.data_criacao_grupo, '%d/%m/%Y') AS date,
         DATE_FORMAT(g.data_atualizacao_membros, '%d/%m/%Y %H:%i') AS membersUpdatedAt,
-        COALESCE(a.accesses, 0) AS accesses
+        COALESCE(a.accesses, 0) AS accesses,
+        COALESCE(a.people, 0) AS people
       FROM tbl_grupo_telegram g
       JOIN tbl_categoria c ON c.id_categoria = g.id_categoria
       LEFT JOIN (
-        SELECT id_grupo, COUNT(*) AS accesses
+        SELECT id_grupo, COUNT(*) AS accesses, COUNT(DISTINCT identificador_visitante) AS people
         FROM tbl_acesso_grupo
         GROUP BY id_grupo
       ) a ON a.id_grupo = g.id_grupo

@@ -13,6 +13,7 @@ type Group = {
   date: string;
   members: number | null;
   accesses: number;
+  people: number;
   membersUpdatedAt: string | null;
 };
 
@@ -95,9 +96,9 @@ export default function DashboardGroups() {
       {message && <p className="form-message">{message}</p>}
       <div className="table-container">
         <table className="data-table">
-          <thead><tr><th>Nome</th><th>Categoria</th><th>Status</th><th>Destaque</th><th>Cadastro</th><th>Membros</th><th>Acessos</th><th className="actions-column">Ações</th></tr></thead>
+          <thead><tr><th>Nome</th><th>Categoria</th><th>Status</th><th>Destaque</th><th>Cadastro</th><th>Membros</th><th>Acessos</th><th>Pessoas</th><th className="actions-column">Ações</th></tr></thead>
           <tbody>
-            {isLoading ? <tr><td className="empty-state" colSpan={8}>Carregando grupos…</td></tr> : filteredGroups.length ? filteredGroups.map((group) => (
+            {isLoading ? <tr><td className="empty-state" colSpan={9}>Carregando grupos…</td></tr> : filteredGroups.length ? filteredGroups.map((group) => (
               <tr key={group.id}>
                 <td><strong>{group.name}</strong></td>
                 <td><span className="badge-category">{group.category}</span></td>
@@ -106,13 +107,14 @@ export default function DashboardGroups() {
                 <td>{group.date}</td>
                 <td title={group.membersUpdatedAt ? `Atualizado em ${group.membersUpdatedAt}` : undefined}>{group.members === null ? 'Indisponível' : formatCount(group.members)}</td>
                 <td>{formatCount(group.accesses)}</td>
+                <td>{formatCount(group.people)}</td>
                 <td className="actions-cell">
                   <button aria-label={`Atualizar membros de ${group.name}`} className="btn-icon" disabled={syncingGroupId === group.id} onClick={() => void handleSyncMembers(group)} title="Atualizar membros pelo Telegram" type="button"><RefreshCw className={syncingGroupId === group.id ? 'is-spinning' : ''} size={16} /></button>
                   <Link aria-label={`Editar ${group.name}`} className="btn-icon" title="Editar" to={`/admin/grupos/${group.id}/editar`}><Edit2 size={16} /></Link>
                   <button aria-label={`Excluir ${group.name}`} className="btn-icon danger" onClick={() => void handleDelete(group)} title="Excluir" type="button"><Trash2 size={16} /></button>
                 </td>
               </tr>
-            )) : <tr><td className="empty-state" colSpan={8}>Nenhum grupo encontrado.</td></tr>}
+            )) : <tr><td className="empty-state" colSpan={9}>Nenhum grupo encontrado.</td></tr>}
           </tbody>
         </table>
       </div>

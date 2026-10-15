@@ -736,7 +736,7 @@ function LandingPage() {
 
   function registerAccess(groupId: number) {
     setGroups((currentGroups) => currentGroups.map((group) => group.id === groupId ? { ...group, accesses: group.accesses + 1 } : group));
-    const url = apiUrl(`/api/public/groups/${groupId}/access`);
+    const url = apiUrl(`/api/public/groups/${groupId}/access?visitorId=${encodeURIComponent(getVisitorId())}`);
     if (navigator.sendBeacon?.(url)) return;
     void fetch(url, { method: 'POST', keepalive: true });
   }
@@ -1091,7 +1091,7 @@ function GroupDetailsPage() {
   function registerRelatedAccess(groupId: number) {
     setGroup((current) => current?.id === groupId ? { ...current, accesses: current.accesses + 1 } : current);
     setRelatedGroups((current) => current.map((item) => item.id === groupId ? { ...item, accesses: item.accesses + 1 } : item));
-    const url = apiUrl(`/api/public/groups/${groupId}/access`);
+    const url = apiUrl(`/api/public/groups/${groupId}/access?visitorId=${encodeURIComponent(getVisitorId())}`);
     if (navigator.sendBeacon?.(url)) return;
     void fetch(url, { method: 'POST', keepalive: true });
   }

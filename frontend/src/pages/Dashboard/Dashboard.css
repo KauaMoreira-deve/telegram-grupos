@@ -744,7 +744,7 @@
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 18px;
   margin-bottom: 24px;
 }
@@ -810,6 +810,7 @@
 .stat-card.tone-green { --tone: #22c55e; }
 .stat-card.tone-amber { --tone: #f59e0b; }
 .stat-card.tone-blue { --tone: #3b82f6; }
+.stat-card.tone-pink { --tone: #ec4899; }
 
 .stat-icon {
   display: grid;

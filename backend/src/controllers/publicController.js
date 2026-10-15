@@ -430,7 +430,8 @@ export const registerGroupAccess = async (req, res) => {
   try {
     const [group] = await conexao.query("SELECT id_grupo FROM tbl_grupo_telegram WHERE id_grupo = ? AND status_grupo = 'ativo'", [req.params.id]);
     if (!group.length) return res.status(404).json({ erro: 'Grupo não encontrado.' });
-    await conexao.query('INSERT INTO tbl_acesso_grupo (id_grupo) VALUES (?)', [req.params.id]);
+    const visitorId = normalize(req.query.visitorId);
+    await conexao.query('INSERT INTO tbl_acesso_grupo (id_grupo, identificador_visitante) VALUES (?, ?)', [req.params.id, /^[a-zA-Z0-9-]{16,64}$/.test(visitorId) ? visitorId : null]);
     res.status(201).json({ mensagem: 'Acesso registrado.' });
   } catch (error) {
     logControllerError(error);

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Inbox, MousePointerClick, Plus, Tags, UserCheck, Users } from 'lucide-react';
+import { ArrowRight, Inbox, MousePointerClick, Plus, Tags, UserCheck, UserRound, Users } from 'lucide-react';
 import { adminFetch as fetch, getAdminSession } from '../../auth';
 import { apiUrl } from '../../config/api';
 
@@ -14,7 +14,7 @@ type RecentGroup = {
   date: string;
 };
 
-type DailyAccess = { day: string; count: number };
+type DailyAccess = { day: string; count: number; people: number };
 
 function greeting() {
   const hour = new Date().getHours();
@@ -46,7 +46,7 @@ function AccessesChart({ data }: { data: DailyAccess[] }) {
         {data.map((item) => (
           <div className="bar-chart-column" key={item.day}>
             <div className="bar-chart-track">
-              <span className="bar-chart-tooltip">{formatCount(item.count)} {item.count === 1 ? 'acesso' : 'acessos'}<small>{formatDay(item.day, { day: '2-digit', month: 'short' })}</small></span>
+              <span className="bar-chart-tooltip">{formatCount(item.count)} {item.count === 1 ? 'acesso' : 'acessos'}<small>{formatCount(item.people)} {item.people === 1 ? 'pessoa' : 'pessoas'}</small><small>{formatDay(item.day, { day: '2-digit', month: 'short' })}</small></span>
               <div className={`bar-chart-bar ${item.count === 0 ? 'is-empty' : ''}`} style={{ height: `${Math.max((item.count / max) * 100, item.count ? 4 : 0)}%` }} />
             </div>
             <span className="bar-chart-label">{formatDay(item.day, { weekday: 'short' }).replace('.', '')}</span>
@@ -64,6 +64,7 @@ export default function DashboardHome() {
     activeGroups: 0,
     totalCategories: 0,
     totalAcessos: 0,
+    totalPessoas: 0,
     pendingSubmissions: 0,
   });
   const [recentGroups, setRecentGroups] = useState<RecentGroup[]>([]);
@@ -93,6 +94,7 @@ export default function DashboardHome() {
     { label: 'Grupos ativos', value: formatCount(statsData.activeGroups), hint: 'Visíveis no site', icon: <UserCheck size={22} />, tone: 'green' },
     { label: 'Categorias', value: formatCount(statsData.totalCategories), hint: 'Organizando o catálogo', icon: <Tags size={22} />, tone: 'amber' },
     { label: 'Total de acessos', value: formatCount(statsData.totalAcessos), hint: 'Desde o lançamento', icon: <MousePointerClick size={22} />, tone: 'blue' },
+    { label: 'Pessoas únicas', value: formatCount(statsData.totalPessoas), hint: 'Visitantes que acessaram grupos', icon: <UserRound size={22} />, tone: 'pink' },
   ];
 
   return (
