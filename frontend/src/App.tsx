@@ -1,25 +1,27 @@
 import './App.css'
 import Cards from './components/Cards'
 import Button from './components/btn'
-import imagemGrupos from './assets/imagem-gruou-black.png'
+import imagemGrupos from './assets/imagem-grupos.webp'
 import telegramLogo from './assets/telegram.png'
 import safetyPoster from './assets/_image.webp'
-import { useEffect, useEffectEvent, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useEffectEvent, useMemo, useState } from 'react'
 import { BrowserRouter, Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { Check, ChevronDown, Clock3, Eye, Link2, Menu, MessageCircle, Search, Send, Share2, SlidersHorizontal, ThumbsUp, Users, X } from 'lucide-react'
-import Login from './pages/Login/Login'
+import { Check, ChevronDown, Clock3, Eye, LayoutGrid, Link2, Menu, MessageCircle, Search, Send, Share2, SlidersHorizontal, ThumbsUp, Users, X } from 'lucide-react'
 import RequireAdmin from './components/RequireAdmin'
-import DashboardLayout from './pages/Dashboard/DashboardLayout'
-import DashboardHome from './pages/Dashboard/DashboardHome'
-import DashboardGroups from './pages/Dashboard/DashboardGroups'
-import DashboardGroupForm from './pages/Dashboard/DashboardGroupForm'
-import DashboardCategories from './pages/Dashboard/DashboardCategories'
-import DashboardUsers from './pages/Dashboard/DashboardUsers'
-import DashboardSettings from './pages/Dashboard/DashboardSettings'
-import DashboardSubmissions from './pages/Dashboard/DashboardSubmissions'
 import { apiUrl } from './config/api'
 import PageMeta from './components/PageMeta'
 import { HOME_TITLE, SITE_DESCRIPTION, SITE_NAME, safeImageUrl, safeTelegramUrl, siteUrl } from './config/site'
+
+// O painel e o login são carregados sob demanda para não pesar no site público.
+const Login = lazy(() => import('./pages/Login/Login'))
+const DashboardLayout = lazy(() => import('./pages/Dashboard/DashboardLayout'))
+const DashboardHome = lazy(() => import('./pages/Dashboard/DashboardHome'))
+const DashboardGroups = lazy(() => import('./pages/Dashboard/DashboardGroups'))
+const DashboardGroupForm = lazy(() => import('./pages/Dashboard/DashboardGroupForm'))
+const DashboardCategories = lazy(() => import('./pages/Dashboard/DashboardCategories'))
+const DashboardUsers = lazy(() => import('./pages/Dashboard/DashboardUsers'))
+const DashboardSettings = lazy(() => import('./pages/Dashboard/DashboardSettings'))
+const DashboardSubmissions = lazy(() => import('./pages/Dashboard/DashboardSubmissions'))
 
 
 type PublicGroup = {
@@ -40,7 +42,7 @@ type PublicGroup = {
   hashtags: string[];
 };
 
-type PublicCategory = { id: number; name: string; url: string };
+type PublicCategory = { id: number; name: string; url: string; headline?: string | null; subheadline?: string | null; groupCount?: number };
 type PublicStats = { totalGroups: number; totalMembers: number; totalCategories: number; totalAccesses: number };
 type FooterCatalog = { categories: PublicCategory[]; hashtags: string[] };
 type SubmissionForm = { nome_grupo: string; id_categoria: string; descricao_grupo: string; link_telegram: string; nome_contato: string; email_contato: string };
@@ -63,8 +65,42 @@ const emptySubmissionForm: SubmissionForm = { nome_grupo: '', id_categoria: '', 
 const groupsPerPage = 30;
 const telegramFolderUrl = 'https://t.me/addlist/O1xBNBhDJto2ODYx';
 const telegramFolderGateKey = 'telegram-folder-opened';
+const popunderIndexKey = 'popunder-index';
 let telegramFolderOpenedFallback = false;
+let popunderIndexFallback = 0;
 let visitorIdFallback = '';
+
+type PopunderSettings = { enabled: boolean; mode: 'sequencial' | 'aleatorio'; links: string[] };
+// Enquanto a configuração do painel não carrega, mantém o link padrão.
+let popunderSettings: PopunderSettings = { enabled: true, mode: 'sequencial', links: [telegramFolderUrl] };
+let popunderSettingsRequest: Promise<void> | null = null;
+
+function loadPopunderSettings() {
+  popunderSettingsRequest ??= fetch(apiUrl('/api/public/settings'))
+    .then((response) => response.ok ? response.json() : null)
+    .then((data) => {
+      const settings = data?.popunder;
+      if (!settings || typeof settings.enabled !== 'boolean' || !Array.isArray(settings.links)) return;
+      const links = settings.links.filter((link: unknown): link is string => typeof link === 'string' && /^https:\/\//i.test(link));
+      popunderSettings = { enabled: settings.enabled && links.length > 0, mode: settings.mode === 'aleatorio' ? 'aleatorio' : 'sequencial', links };
+    })
+    .catch(() => { /* Mantém o link padrão quando a API falha. */ });
+  return popunderSettingsRequest;
+}
+
+// Escolhe o próximo link do pop under, em sequência (rodízio) ou aleatoriamente.
+function nextPopunderUrl() {
+  const { links, mode } = popunderSettings;
+  if (links.length <= 1 || mode === 'aleatorio') return links[Math.floor(Math.random() * links.length)] || telegramFolderUrl;
+  let index = popunderIndexFallback;
+  try {
+    index = Number(localStorage.getItem(popunderIndexKey)) || 0;
+    localStorage.setItem(popunderIndexKey, String(index + 1));
+  } catch {
+    popunderIndexFallback += 1;
+  }
+  return links[index % links.length];
+}
 
 function hasOpenedTelegramFolder() {
   try {
@@ -84,11 +120,16 @@ function markTelegramFolderAsOpened() {
 }
 
 function handleTelegramGroupLink(event: React.MouseEvent<HTMLAnchorElement>, groupLink: string, onGroupAccess: () => void) {
-  const canOpenGroup = hasOpenedTelegramFolder();
   const safeGroupLink = safeTelegramUrl(groupLink);
-  event.currentTarget.href = canOpenGroup && safeGroupLink ? safeGroupLink : telegramFolderUrl;
-  if (canOpenGroup && safeGroupLink) onGroupAccess();
-  else markTelegramFolderAsOpened();
+  const canOpenGroup = !popunderSettings.enabled || hasOpenedTelegramFolder();
+  if (canOpenGroup && safeGroupLink) {
+    event.currentTarget.href = safeGroupLink;
+    onGroupAccess();
+    return;
+  }
+  // Primeiro clique da sessão abre o link do pop under configurado no painel.
+  event.currentTarget.href = nextPopunderUrl();
+  markTelegramFolderAsOpened();
 }
 
 const sortOptions: { value: SortMode; label: string; description: string; icon: typeof Clock3 }[] = [
@@ -123,6 +164,24 @@ function normalizePublicGroup(group: PublicGroup): PublicGroup {
     image: safeImageUrl(group.image),
     link: safeTelegramUrl(group.link) || telegramFolderUrl,
   };
+}
+
+// Mantida em sincronia com groupMetaDescription() do backend (seoRenderer.js).
+function groupMetaDescription(group: Pick<PublicGroup, 'description' | 'category'>) {
+  const description = group.description.replace(/\s+/g, ' ').trim();
+  const complement = `Grupo +18 de ${group.category} no Telegram com link ativo.`;
+  const text = description.length < 90 ? `${description} ${complement}`.trim() : description;
+  if (text.length <= 160) return text;
+  const cut = text.slice(0, 159);
+  return `${cut.slice(0, cut.lastIndexOf(' ') > 100 ? cut.lastIndexOf(' ') : 159).trim()}…`;
+}
+
+function categoryHeadline(category: PublicCategory) {
+  return category.headline?.trim() || `Grupos de ${category.name} no Telegram +18`;
+}
+
+function categorySubheadline(category: PublicCategory) {
+  return category.subheadline?.trim() || `Veja grupos de ${category.name} no Telegram para maiores de 18 anos. Encontre links ativos, descrições e comunidades adultas da categoria.`;
 }
 
 function groupPath(group: Pick<PublicGroup, 'id' | 'name'>) {
@@ -198,6 +257,7 @@ function SiteHeader() {
     <ul className="topo-cont">
       <li><a href="/#home" onClick={() => setMenuOpen(false)}>Inicio</a></li>
       <li><a href="/#groups" onClick={() => setMenuOpen(false)}>Grupos</a></li>
+      <li><Link to="/categorias" onClick={() => setMenuOpen(false)}>Categorias</Link></li>
       <li><Link to="/adicionar-grupo" onClick={() => setMenuOpen(false)}>Adicionar grupo</Link></li>
       <li><a href="/#faq" onClick={() => setMenuOpen(false)}>FAQ</a></li>
       <li><Link to="/termos-de-uso" onClick={() => setMenuOpen(false)}>Termos de uso</Link></li>
@@ -271,6 +331,7 @@ function SiteFooter() {
           <span>Links rápidos</span>
           <a href="/#home">Início</a>
           <a href="/#groups">Grupos</a>
+          <Link to="/categorias">Categorias</Link>
           <Link to="/adicionar-grupo">Adicionar grupo</Link>
           <a href="/#faq">Perguntas frequentes</a>
           <Link to="/termos-de-uso">Termos de uso</Link>
@@ -320,6 +381,10 @@ function TermsOfUsePage() {
 }
 
 function PublicLayout() {
+  useEffect(() => {
+    void loadPopunderSettings();
+  }, []);
+
   return (
     <>
       <AgeNotice />
@@ -607,10 +672,9 @@ function LandingPage() {
   const isCategoryPage = Boolean(categorySlug);
   const categoryLabel = currentCategory?.name || categorySlug.replace(/[-_]+/g, ' ').trim();
   const canonicalPath = isCategoryPage ? `/categorias/${encodeURIComponent(categorySlug)}` : '/';
-  const pageTitle = isCategoryPage ? `Grupos de ${categoryLabel} no Telegram +18` : HOME_TITLE;
-  const pageDescription = isCategoryPage
-    ? `Veja grupos de ${categoryLabel} no Telegram para maiores de 18 anos. Encontre links ativos, descrições e comunidades adultas da categoria.`
-    : SITE_DESCRIPTION;
+  const categoryForMeta: PublicCategory = currentCategory || { id: 0, name: categoryLabel, url: categorySlug };
+  const pageTitle = isCategoryPage ? categoryHeadline(categoryForMeta) : HOME_TITLE;
+  const pageDescription = isCategoryPage ? categorySubheadline(categoryForMeta) : SITE_DESCRIPTION;
   const invalidCategory = isCategoryPage && categories.length > 0 && !currentCategory;
   const structuredData = useMemo(() => {
     const pageUrl = siteUrl(canonicalPath);
@@ -685,6 +749,21 @@ function LandingPage() {
     <>
       <PageMeta description={pageDescription} image={imagemGrupos} imageAlt="Diretório de grupos adultos no Telegram" noIndex={invalidCategory} path={canonicalPath} structuredData={structuredData} title={pageTitle} />
       <main>
+        {isCategoryPage ? (
+          <section className="hero category-hero" id="home">
+            <div className="hero-content">
+              <nav aria-label="Navegação estrutural" className="category-breadcrumb">
+                <Link to="/">Início</Link><span aria-hidden="true">›</span><Link to="/categorias">Categorias</Link><span aria-hidden="true">›</span><span>{categoryLabel}</span>
+              </nav>
+              <h1 className="category-headline">{categoryHeadline(categoryForMeta)}</h1>
+              <p className="category-subheadline">{categorySubheadline(categoryForMeta)}</p>
+              <div className="btn-container">
+                <Button className="hero-groups-button" href="#groups">Ver grupos de {categoryLabel}</Button>
+                <Button className="hero-submit-button" href="/categorias">Outras categorias</Button>
+              </div>
+            </div>
+          </section>
+        ) : (
         <section className="hero" id="home">
           <div className="hero-content">
             <h1>
@@ -705,10 +784,11 @@ function LandingPage() {
             </div>
           </div>
         </section>
+        )}
 
         <section className="groups-section" id="groups">
           <div className="groups-content">
-            <h2>Diversos grupos de putaria no Telegram</h2>
+            <h2>{isCategoryPage ? `Grupos de ${categoryLabel} no Telegram` : 'Diversos grupos de putaria no Telegram'}</h2>
             <p>
 Explore os melhores grupos de porno, putaria, amadoras e muito mais no Telegram. Atualizado em setembro de 2026.</p>
             <div className="group-tools">
@@ -785,6 +865,75 @@ Explore os melhores grupos de porno, putaria, amadoras e muito mais no Telegram.
         </section>
       </main>
     </>
+  );
+}
+
+function CategoriesPage() {
+  const [categories, setCategories] = useState<PublicCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    async function loadCategories() {
+      try {
+        const response = await fetch(apiUrl('/api/public/categories'));
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.erro || 'Não foi possível carregar as categorias.');
+        setCategories(data);
+      } catch (requestError) {
+        setError(requestError instanceof Error ? requestError.message : 'Não foi possível carregar as categorias.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    void loadCategories();
+  }, []);
+
+  const structuredData = useMemo(() => [
+    {
+      '@type': 'CollectionPage',
+      '@id': `${siteUrl('/categorias')}#webpage`,
+      url: siteUrl('/categorias'),
+      name: 'Categorias de grupos +18 no Telegram',
+      inLanguage: 'pt-BR',
+      mainEntity: {
+        '@type': 'ItemList',
+        numberOfItems: categories.length,
+        itemListElement: categories.map((category, index) => ({
+          '@type': 'ListItem',
+          position: index + 1,
+          name: category.name,
+          url: siteUrl(`/categorias/${encodeURIComponent(category.url)}`),
+        })),
+      },
+    },
+  ], [categories]);
+
+  return (
+    <main className="categories-page">
+      <PageMeta description="Escolha uma categoria e encontre grupos adultos do Telegram com links ativos: amadoras, casais, novinhas, gays e muito mais." path="/categorias" structuredData={structuredData} title="Categorias de grupos +18 no Telegram" />
+      <section className="categories-content" aria-labelledby="categories-title">
+        <span className="categories-eyebrow">CATEGORIAS</span>
+        <h1 id="categories-title">Categorias de grupos <span className="gradient-roxo">+18 no Telegram</span></h1>
+        <p className="categories-intro">Escolha o tipo de conteúdo que você procura e veja só os grupos daquela categoria, todos com links verificados.</p>
+        {isLoading && <p className="details-status">Carregando categorias…</p>}
+        {error && <p className="details-status details-error">{error}</p>}
+        <div className="categories-grid">
+          {categories.map((category) => (
+            <Link className="category-card" key={category.id} to={`/categorias/${encodeURIComponent(category.url)}`}>
+              <span className="category-card-icon" aria-hidden="true"><LayoutGrid size={20} /></span>
+              <h2>{category.name}</h2>
+              <p>{category.headline?.trim() || `Grupos de ${category.name} no Telegram +18`}</p>
+              <span className="category-card-footer">
+                <small>{formatCount(Number(category.groupCount) || 0)} {Number(category.groupCount) === 1 ? 'grupo' : 'grupos'}</small>
+                <strong>Ver grupos <span aria-hidden="true">→</span></strong>
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+    </main>
   );
 }
 
@@ -970,7 +1119,7 @@ function GroupDetailsPage() {
         '@id': `${pageUrl}#webpage`,
         url: pageUrl,
         name: `${group.name}: grupo +18 no Telegram`,
-        description: group.description,
+        description: groupMetaDescription(group),
         inLanguage: 'pt-BR',
         isPartOf: { '@id': `${siteUrl('/')}#website` },
         about: { '@type': 'Thing', name: `Grupo adulto de ${group.category} no Telegram` },
@@ -992,7 +1141,7 @@ function GroupDetailsPage() {
   return (
     <main className="group-details-page">
       <PageMeta
-        description={group ? `${group.name}: grupo +18 no Telegram na categoria ${group.category}. ${group.description}` : 'Detalhes de um grupo adulto no Telegram.'}
+        description={group ? groupMetaDescription(group) : 'Detalhes de um grupo adulto no Telegram.'}
         image={group?.image || imagemGrupos}
         imageAlt={group ? `Imagem do grupo adulto ${group.name} no Telegram` : 'Grupos adultos no Telegram'}
         noIndex={!group}
@@ -1026,7 +1175,7 @@ function GroupDetailsPage() {
                   <div><span>Membros no Telegram</span><strong>{group.members === null ? 'Indispon\u00edvel' : formatCount(group.members)}</strong></div>
                   <div><span>Acessos pelo site</span><strong>{formatCount(group.accesses)}</strong></div>
                 </div>
-                <a className="details-join-button" href={hasOpenedTelegramFolder() ? group.link : telegramFolderUrl} onClick={(event) => handleTelegramGroupLink(event, group.link, registerAccess)} rel="ugc nofollow noopener noreferrer" target="_blank">
+                <a className="details-join-button" href={!popunderSettings.enabled || hasOpenedTelegramFolder() ? group.link : popunderSettings.links[0] || telegramFolderUrl} onClick={(event) => handleTelegramGroupLink(event, group.link, registerAccess)} rel="ugc nofollow noopener noreferrer" target="_blank">
                   Entrar no grupo pelo Telegram <span aria-hidden="true">→</span>
                 </a>
                 <LikeButton group={group} onLiked={updateLikes} />
@@ -1081,29 +1230,32 @@ function NotFoundPage() {
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route element={<PublicLayout />}>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/categorias/:categorySlug" element={<LandingPage />} />
-          <Route path="/adicionar-grupo" element={<AddGroupPage />} />
-          <Route path="/grupos/:slug" element={<GroupDetailsPage />} />
-          <Route path="/termos-de-uso" element={<TermsOfUsePage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
-        <Route path="/login" element={<Navigate replace to="/dash" />} />
-        <Route path="/dash" element={<Login />} />
-        <Route path="/admin" element={<RequireAdmin><DashboardLayout /></RequireAdmin>}>
-          <Route index element={<DashboardHome />} />
-          <Route path="grupos" element={<DashboardGroups />} />
-          <Route path="grupos/novo" element={<DashboardGroupForm />} />
-          <Route path="grupos/:id/editar" element={<DashboardGroupForm />} />
-          <Route path="solicitacoes" element={<DashboardSubmissions />} />
-          <Route path="categorias" element={<DashboardCategories />} />
-          <Route path="usuarios" element={<DashboardUsers />} />
-          <Route path="configuracoes" element={<DashboardSettings />} />
-          <Route path="*" element={<Navigate replace to="/admin" />} />
-        </Route>
-      </Routes>
+      <Suspense fallback={<p className="route-loading">Carregando…</p>}>
+        <Routes>
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/categorias" element={<CategoriesPage />} />
+            <Route path="/categorias/:categorySlug" element={<LandingPage />} />
+            <Route path="/adicionar-grupo" element={<AddGroupPage />} />
+            <Route path="/grupos/:slug" element={<GroupDetailsPage />} />
+            <Route path="/termos-de-uso" element={<TermsOfUsePage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+          <Route path="/login" element={<Navigate replace to="/dash" />} />
+          <Route path="/dash" element={<Login />} />
+          <Route path="/admin" element={<RequireAdmin><DashboardLayout /></RequireAdmin>}>
+            <Route index element={<DashboardHome />} />
+            <Route path="grupos" element={<DashboardGroups />} />
+            <Route path="grupos/novo" element={<DashboardGroupForm />} />
+            <Route path="grupos/:id/editar" element={<DashboardGroupForm />} />
+            <Route path="solicitacoes" element={<DashboardSubmissions />} />
+            <Route path="categorias" element={<DashboardCategories />} />
+            <Route path="usuarios" element={<DashboardUsers />} />
+            <Route path="configuracoes" element={<DashboardSettings />} />
+            <Route path="*" element={<Navigate replace to="/admin" />} />
+          </Route>
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

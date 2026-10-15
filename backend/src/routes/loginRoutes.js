@@ -3,6 +3,7 @@ import express from 'express';
 import conexao from '../config/database.js';
 import { createAccessToken } from '../middlewares/authMiddleware.js';
 import { createRateLimiter, noStore } from '../middlewares/securityMiddleware.js';
+import { createCaptcha, verifyCaptcha } from '../services/captchaService.js';
 
 const router = express.Router();
 const DUMMY_PASSWORD_HASH = '$2b$12$AZRTomeIHTLX49iJ5/LlVOvFRBXH.mKrUkWQayDC/5EZ/1wtnpqRu';
@@ -12,7 +13,22 @@ const loginLimiter = createRateLimiter({
   message: 'Muitas tentativas de login. Aguarde alguns minutos e tente novamente.',
 });
 
+const captchaLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: 'Muitos captchas solicitados. Aguarde alguns minutos e tente novamente.',
+});
+
+router.get('/login/captcha', noStore, captchaLimiter, (_req, res) => {
+  res.json(createCaptcha());
+});
+
 router.post('/login', noStore, loginLimiter, async (req, res) => {
+  // O captcha é conferido antes de qualquer consulta ao banco.
+  if (!verifyCaptcha(req.body?.captchaToken, req.body?.captchaAnswer)) {
+    return res.status(400).json({ erro: 'Captcha incorreto ou expirado. Digite os caracteres da nova imagem.', captcha: true });
+  }
+
   const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
   const password = typeof req.body?.password === 'string' ? req.body.password : '';
   const validInput = email.length <= 254

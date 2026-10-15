@@ -134,3 +134,50 @@
     border-radius: 18px;
   }
 }
+
+.login-captcha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.login-captcha img,
+.login-captcha-placeholder {
+  display: grid;
+  width: 200px;
+  max-width: 100%;
+  height: 64px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  place-items: center;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.login-captcha-refresh {
+  display: inline-grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.login-captcha-refresh:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.login-captcha-refresh:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+#captcha {
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}

@@ -63,27 +63,37 @@
 html {
   scroll-behavior: smooth;
   overflow-x: clip;
+  background: var(--bg);
+  /* Evita o "elástico" do celular revelar uma cor diferente no topo/rodapé. */
+  overscroll-behavior-y: none;
 }
 
 body {
+  position: relative;
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
   color: var(--text);
-  background:
-    radial-gradient(
-      circle at 12% 18%,
-      rgba(190, 39, 220, 0.2),
-      transparent 25rem
-    ),
-    radial-gradient(
-      circle at 88% 72%,
-      rgba(190, 39, 220, 0.2),
-      transparent 30rem
-    ),
-    var(--bg);
-  background-attachment: fixed;
+  /* Transparente: a cor base vem do html e o brilho da camada body::before. */
+  background: transparent;
   overflow-x: clip;
+}
+
+/*
+ * O brilho roxo fica em uma camada fixa própria. "background-attachment: fixed"
+ * é ignorado ou repintado com falhas em navegadores móveis, o que fazia a cor
+ * do fundo "pular" ao rolar a página.
+ */
+body::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  height: 100lvh;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(190, 39, 220, 0.2), transparent 25rem),
+    radial-gradient(circle at 88% 72%, rgba(190, 39, 220, 0.2), transparent 30rem);
+  content: "";
+  pointer-events: none;
 }
 
 #root {

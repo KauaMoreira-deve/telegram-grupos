@@ -67,6 +67,8 @@ test('todas as areas administrativas exigem autenticacao', async () => {
     ['POST', '/api/admin/group-submissions/1/approve'],
     ['POST', '/api/admin/group-submissions/1/reject'],
     ['PUT', '/api/admin/profile'],
+    ['GET', '/api/admin/site-settings'],
+    ['PUT', '/api/admin/site-settings'],
   ];
 
   for (const [method, path] of protectedRoutes) {

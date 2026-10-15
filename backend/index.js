@@ -14,6 +14,8 @@ import {
 import adminRoutes from './src/routes/adminRoutes.js';
 import loginRoutes from './src/routes/loginRoutes.js';
 import publicRoutes from './src/routes/publicRoutes.js';
+import { createPageRenderer } from './src/services/seoRenderer.js';
+import { getSitemap } from './src/controllers/publicController.js';
 
 const app = express();
 const allowedOrigins = new Set(env.corsOrigins);
@@ -87,14 +89,24 @@ app.use('/api/public', publicRoutes);
 
 app.use('/api', notFoundHandler);
 
-if (env.isProduction) {
-  app.use(express.static(frontendDistDirectory, { index: false }));
-  app.get('/{*frontendPath}', (_req, res, next) => {
-    res.setHeader('Cache-Control', 'no-cache');
-    res.sendFile(frontendIndexFile, (error) => {
-      if (error) next(error);
-    });
-  });
+// Sitemap dinâmico com todas as categorias e grupos ativos.
+app.get('/sitemap.xml', readinessGate, getSitemap);
+
+// SERVE_FRONTEND=true permite testar localmente o site já compilado (frontend/dist).
+if (env.isProduction || process.env.SERVE_FRONTEND === 'true') {
+  app.use(express.static(frontendDistDirectory, {
+    index: false,
+    setHeaders(res, filePath) {
+      // Arquivos gerados pelo Vite têm hash no nome e podem ficar em cache por 1 ano.
+      if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else if (/\.(?:woff2?|png|svg|webp|ico)$/i.test(filePath)) {
+        res.setHeader('Cache-Control', 'public, max-age=604800');
+      }
+    },
+  }));
+  // Entrega o index.html com título, descrição e canonical corretos para cada rota.
+  app.get('/{*frontendPath}', createPageRenderer({ indexFile: frontendIndexFile }));
 }
 
 app.use(notFoundHandler);

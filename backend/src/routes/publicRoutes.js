@@ -1,5 +1,5 @@
 import express from 'express';
-import { createGroupSubmission, getFooterCatalog, getGroupLikeStatus, getPublicCategories, getPublicGroupById, getPublicGroups, getPublicStats, getSitemap, getSubmissionCategories, registerGroupAccess, registerGroupLike } from '../controllers/publicController.js';
+import { createGroupSubmission, getFooterCatalog, getGroupLikeStatus, getPublicCategories, getPublicGroupById, getPublicGroups, getPublicSettings, getPublicStats, getSitemap, getSubmissionCategories, registerGroupAccess, registerGroupLike } from '../controllers/publicController.js';
 import { createRateLimiter, validateNumericId } from '../middlewares/securityMiddleware.js';
 
 const router = express.Router();
@@ -27,6 +27,7 @@ router.get('/categories', getPublicCategories);
 router.get('/submission-categories', getSubmissionCategories);
 router.get('/footer-catalog', getFooterCatalog);
 router.get('/stats', getPublicStats);
+router.get('/settings', getPublicSettings);
 router.post('/groups/:id/access', accessLimiter, registerGroupAccess);
 router.get('/groups/:id/like-status', getGroupLikeStatus);
 router.post('/groups/:id/like', likeLimiter, registerGroupLike);

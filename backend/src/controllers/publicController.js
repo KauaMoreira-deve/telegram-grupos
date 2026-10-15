@@ -1,5 +1,7 @@
 import conexao from '../config/database.js';
+import { getPopunderSettings } from '../services/settingsService.js';
 import { fetchTelegramMemberCount } from '../services/telegramService.js';
+import { cached } from '../utils/cache.js';
 import { isValidEmail, isValidTelegramUrl, normalize } from '../utils/validation.js';
 
 const publicSiteUrl = 'https://putarianotelegram.net';
@@ -19,6 +21,13 @@ function escapeXml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+}
+
+// Tempo de cache das consultas públicas (servidor e navegador/CDN).
+const PUBLIC_CACHE_MS = 20_000;
+
+function setPublicCache(res, seconds = 30) {
+  res.setHeader('Cache-Control', `public, max-age=${seconds}, stale-while-revalidate=${seconds * 4}`);
 }
 
 function logControllerError(error) {
@@ -147,8 +156,8 @@ async function refreshStaleMemberCounts(groupId = null) {
   return memberRefreshPromise;
 }
 
-export const getPublicGroups = async (_req, res) => {
-  try {
+export function loadPublicGroups() {
+  return cached('public:groups', PUBLIC_CACHE_MS, async () => {
     void refreshStaleMemberCounts().catch(logControllerError);
     const [groups] = await conexao.query(`
       SELECT ${publicGroupFields}
@@ -160,7 +169,15 @@ export const getPublicGroups = async (_req, res) => {
       WHERE g.status_grupo = 'ativo' AND c.status_categoria = 'ativo'
       ORDER BY g.destaque_grupo DESC, g.id_grupo DESC
     `);
-    res.json(groups.map(serializePublicGroup));
+    return groups.map(serializePublicGroup);
+  });
+}
+
+export const getPublicGroups = async (_req, res) => {
+  try {
+    const groups = await loadPublicGroups();
+    setPublicCache(res);
+    res.json(groups);
   } catch (error) {
     logControllerError(error);
     res.status(500).json({ erro: 'Erro ao buscar grupos públicos.' });
@@ -189,6 +206,7 @@ export const getSitemap = async (_req, res) => {
 
     const urls = [
       { path: '/', changeFrequency: 'daily', priority: '1.0' },
+      { path: '/categorias', changeFrequency: 'daily', priority: '0.8' },
       { path: '/adicionar-grupo', changeFrequency: 'monthly', priority: '0.6' },
       { path: '/termos-de-uso', changeFrequency: 'monthly', priority: '0.3' },
       ...categoriesResult[0].map((category) => ({
@@ -221,10 +239,8 @@ export const getSitemap = async (_req, res) => {
   }
 };
 
-export const getPublicGroupById = async (req, res) => {
-  try {
-    void refreshStaleMemberCounts(req.params.id).catch(logControllerError);
-    const [groups] = await conexao.query(
+export async function findPublicGroup(groupId) {
+  const [groups] = await conexao.query(
       `SELECT ${publicGroupFields}
        FROM tbl_grupo_telegram g
        JOIN tbl_categoria c ON c.id_categoria = g.id_categoria
@@ -232,11 +248,17 @@ export const getPublicGroupById = async (req, res) => {
        ${groupLikesJoin}
        ${groupHashtagsJoin}
        WHERE g.id_grupo = ? AND g.status_grupo = 'ativo' AND c.status_categoria = 'ativo'`,
-      [req.params.id],
-    );
+    [groupId],
+  );
+  return groups.length ? serializePublicGroup(groups[0]) : null;
+}
 
-    if (!groups.length) return res.status(404).json({ erro: 'Grupo não encontrado.' });
-    res.json(serializePublicGroup(groups[0]));
+export const getPublicGroupById = async (req, res) => {
+  try {
+    void refreshStaleMemberCounts(req.params.id).catch(logControllerError);
+    const group = await findPublicGroup(req.params.id);
+    if (!group) return res.status(404).json({ erro: 'Grupo não encontrado.' });
+    res.json(group);
   } catch (error) {
     logControllerError(error);
     res.status(500).json({ erro: 'Erro ao buscar grupo público.' });
@@ -245,46 +267,58 @@ export const getPublicGroupById = async (req, res) => {
 
 export const getPublicStats = async (_req, res) => {
   try {
-    const [groupsResult, categoriesResult, accessesResult] = await Promise.all([
-      conexao.query(`
-        SELECT COUNT(*) AS totalGroups, COALESCE(SUM(g.quantidade_membros), 0) AS totalMembers
-        FROM tbl_grupo_telegram g
-        JOIN tbl_categoria c ON c.id_categoria = g.id_categoria
-        WHERE g.status_grupo = 'ativo' AND c.status_categoria = 'ativo'
-      `),
-      conexao.query(`
-        SELECT COUNT(*) AS totalCategories
-        FROM tbl_categoria c
-        WHERE c.status_categoria = 'ativo'
-          AND EXISTS (
-            SELECT 1 FROM tbl_grupo_telegram g
-            WHERE g.id_categoria = c.id_categoria AND g.status_grupo = 'ativo'
-          )
-      `),
-      conexao.query(`
-        SELECT COUNT(*) AS totalAccesses
-        FROM tbl_acesso_grupo a
-        JOIN tbl_grupo_telegram g ON g.id_grupo = a.id_grupo
-        JOIN tbl_categoria c ON c.id_categoria = g.id_categoria
-        WHERE g.status_grupo = 'ativo' AND c.status_categoria = 'ativo'
-      `),
-    ]);
+    const stats = await cached('public:stats', PUBLIC_CACHE_MS, async () => {
+      const [groupsResult, categoriesResult, accessesResult] = await Promise.all([
+        conexao.query(`
+          SELECT COUNT(*) AS totalGroups, COALESCE(SUM(g.quantidade_membros), 0) AS totalMembers
+          FROM tbl_grupo_telegram g
+          JOIN tbl_categoria c ON c.id_categoria = g.id_categoria
+          WHERE g.status_grupo = 'ativo' AND c.status_categoria = 'ativo'
+        `),
+        conexao.query(`
+          SELECT COUNT(*) AS totalCategories
+          FROM tbl_categoria c
+          WHERE c.status_categoria = 'ativo'
+            AND EXISTS (
+              SELECT 1 FROM tbl_grupo_telegram g
+              WHERE g.id_categoria = c.id_categoria AND g.status_grupo = 'ativo'
+            )
+        `),
+        conexao.query(`
+          SELECT COUNT(*) AS totalAccesses
+          FROM tbl_acesso_grupo a
+          JOIN tbl_grupo_telegram g ON g.id_grupo = a.id_grupo
+          JOIN tbl_categoria c ON c.id_categoria = g.id_categoria
+          WHERE g.status_grupo = 'ativo' AND c.status_categoria = 'ativo'
+        `),
+      ]);
 
-    res.json({
-      totalGroups: groupsResult[0][0].totalGroups,
-      totalMembers: groupsResult[0][0].totalMembers,
-      totalCategories: categoriesResult[0][0].totalCategories,
-      totalAccesses: accessesResult[0][0].totalAccesses,
+      return {
+        totalGroups: groupsResult[0][0].totalGroups,
+        totalMembers: groupsResult[0][0].totalMembers,
+        totalCategories: categoriesResult[0][0].totalCategories,
+        totalAccesses: accessesResult[0][0].totalAccesses,
+      };
     });
+    setPublicCache(res);
+    res.json(stats);
   } catch (error) {
     logControllerError(error);
     res.status(500).json({ erro: 'Erro ao buscar estatísticas públicas.' });
   }
 };
 
+export function loadPublicCategories() {
+  return cached('public:categories', PUBLIC_CACHE_MS, async () => {
+    const [categories] = await conexao.query(`SELECT c.id_categoria AS id, c.nome_categoria AS name, c.url_categoria AS url, c.headline_categoria AS headline, c.subheadline_categoria AS subheadline, COUNT(g.id_grupo) AS groupCount FROM tbl_categoria c LEFT JOIN tbl_grupo_telegram g ON g.id_categoria = c.id_categoria AND g.status_grupo = 'ativo' WHERE c.status_categoria = 'ativo' GROUP BY c.id_categoria HAVING groupCount > 0 ORDER BY c.nome_categoria`);
+    return categories.map((category) => ({ ...category, groupCount: Number(category.groupCount) || 0 }));
+  });
+}
+
 export const getPublicCategories = async (_req, res) => {
   try {
-    const [categories] = await conexao.query(`SELECT c.id_categoria AS id, c.nome_categoria AS name, c.url_categoria AS url, COUNT(g.id_grupo) AS groupCount FROM tbl_categoria c LEFT JOIN tbl_grupo_telegram g ON g.id_categoria = c.id_categoria AND g.status_grupo = 'ativo' WHERE c.status_categoria = 'ativo' GROUP BY c.id_categoria HAVING groupCount > 0 ORDER BY c.nome_categoria`);
+    const categories = await loadPublicCategories();
+    setPublicCache(res);
     res.json(categories);
   } catch (error) {
     logControllerError(error);
@@ -309,25 +343,29 @@ export const getSubmissionCategories = async (_req, res) => {
 
 export const getFooterCatalog = async (_req, res) => {
   try {
-    const [categories, hashtags] = await Promise.all([
-      conexao.query(`
-        SELECT DISTINCT c.id_categoria AS id, c.nome_categoria AS name, c.url_categoria AS url
-        FROM tbl_categoria c
-        JOIN tbl_grupo_telegram g ON g.id_categoria = c.id_categoria
-        WHERE c.status_categoria = 'ativo' AND g.status_grupo = 'ativo'
-        ORDER BY c.nome_categoria
-      `),
-      conexao.query(`
-        SELECT DISTINCT h.nome_hashtag AS name
-        FROM tbl_hashtag h
-        JOIN tbl_grupo_hashtag gh ON gh.id_hashtag = h.id_hashtag
-        JOIN tbl_grupo_telegram g ON g.id_grupo = gh.id_grupo
-        JOIN tbl_categoria c ON c.id_categoria = g.id_categoria
-        WHERE g.status_grupo = 'ativo' AND c.status_categoria = 'ativo'
-        ORDER BY h.nome_hashtag
-      `),
-    ]);
-    res.json({ categories: categories[0], hashtags: hashtags[0].map((hashtag) => hashtag.name) });
+    const catalog = await cached('public:footer', PUBLIC_CACHE_MS, async () => {
+      const [categories, hashtags] = await Promise.all([
+        conexao.query(`
+          SELECT DISTINCT c.id_categoria AS id, c.nome_categoria AS name, c.url_categoria AS url
+          FROM tbl_categoria c
+          JOIN tbl_grupo_telegram g ON g.id_categoria = c.id_categoria
+          WHERE c.status_categoria = 'ativo' AND g.status_grupo = 'ativo'
+          ORDER BY c.nome_categoria
+        `),
+        conexao.query(`
+          SELECT DISTINCT h.nome_hashtag AS name
+          FROM tbl_hashtag h
+          JOIN tbl_grupo_hashtag gh ON gh.id_hashtag = h.id_hashtag
+          JOIN tbl_grupo_telegram g ON g.id_grupo = gh.id_grupo
+          JOIN tbl_categoria c ON c.id_categoria = g.id_categoria
+          WHERE g.status_grupo = 'ativo' AND c.status_categoria = 'ativo'
+          ORDER BY h.nome_hashtag
+        `),
+      ]);
+      return { categories: categories[0], hashtags: hashtags[0].map((hashtag) => hashtag.name) };
+    });
+    setPublicCache(res, 300);
+    res.json(catalog);
   } catch (error) {
     logControllerError(error);
     res.status(500).json({ erro: 'Erro ao buscar o catalogo do rodape.' });
@@ -453,5 +491,16 @@ export const getGroupLikeStatus = async (req, res) => {
   } catch (error) {
     logControllerError(error);
     res.status(500).json({ erro: 'Erro ao consultar curtidas.' });
+  }
+};
+
+export const getPublicSettings = async (_req, res) => {
+  try {
+    const popunder = await getPopunderSettings();
+    setPublicCache(res, 60);
+    res.json({ popunder: { enabled: popunder.enabled, mode: popunder.mode, links: popunder.links } });
+  } catch (error) {
+    logControllerError(error);
+    res.status(500).json({ erro: 'Erro ao buscar configurações públicas.' });
   }
 };

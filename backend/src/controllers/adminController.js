@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import conexao from "../config/database.js";
+import { getPopunderSettings, normalizePopunderSettings, savePopunderSettings } from "../services/settingsService.js";
 import { fetchTelegramMemberCount } from "../services/telegramService.js";
 import { isValidEmail, isValidPassword, isValidSlug, isValidTelegramUrl, normalize } from "../utils/validation.js";
 
@@ -127,9 +128,13 @@ function categoryPayload(body) {
     nome_categoria: normalize(body.nome_categoria),
     url_categoria: normalize(body.url_categoria).toLowerCase(),
     status_categoria: normalize(body.status_categoria || "ativo").toLowerCase(),
+    headline_categoria: normalize(body.headline_categoria) || null,
+    subheadline_categoria: normalize(body.subheadline_categoria) || null,
   };
   return payload.nome_categoria && payload.nome_categoria.length <= 100 &&
     isValidSlug(payload.url_categoria, 120) &&
+    (payload.headline_categoria?.length ?? 0) <= 160 &&
+    (payload.subheadline_categoria?.length ?? 0) <= 500 &&
     STATUS.has(payload.status_categoria)
     ? payload
     : null;
@@ -412,7 +417,7 @@ export const deleteGroup = async (req, res) => {
 export const getCategories = async (_req, res) => {
   try {
     const [categories] = await conexao.query(
-      `SELECT c.id_categoria AS id, c.nome_categoria AS name, c.url_categoria AS url, c.status_categoria AS status, COUNT(g.id_grupo) AS groupCount FROM tbl_categoria c LEFT JOIN tbl_grupo_telegram g ON g.id_categoria = c.id_categoria GROUP BY c.id_categoria ORDER BY c.nome_categoria`,
+      `SELECT c.id_categoria AS id, c.nome_categoria AS name, c.url_categoria AS url, c.status_categoria AS status, c.headline_categoria AS headline, c.subheadline_categoria AS subheadline, COUNT(g.id_grupo) AS groupCount FROM tbl_categoria c LEFT JOIN tbl_grupo_telegram g ON g.id_categoria = c.id_categoria GROUP BY c.id_categoria ORDER BY c.nome_categoria`,
     );
     res.json(
       categories.map((category) => ({
@@ -442,14 +447,16 @@ export const createCategory = async (req, res) => {
   if (!category)
     return res
       .status(400)
-      .json({ erro: "Nome, URL e status válidos são obrigatórios." });
+      .json({ erro: "Nome, URL e status válidos são obrigatórios (headline até 160 e subheadline até 500 caracteres)." });
   try {
     const [result] = await conexao.query(
-      "INSERT INTO tbl_categoria (nome_categoria, url_categoria, status_categoria) VALUES (?, ?, ?)",
+      "INSERT INTO tbl_categoria (nome_categoria, url_categoria, status_categoria, headline_categoria, subheadline_categoria) VALUES (?, ?, ?, ?, ?)",
       [
         category.nome_categoria,
         category.url_categoria,
         category.status_categoria,
+        category.headline_categoria,
+        category.subheadline_categoria,
       ],
     );
     res
@@ -465,14 +472,16 @@ export const updateCategory = async (req, res) => {
   if (!category)
     return res
       .status(400)
-      .json({ erro: "Nome, URL e status válidos são obrigatórios." });
+      .json({ erro: "Nome, URL e status válidos são obrigatórios (headline até 160 e subheadline até 500 caracteres)." });
   try {
     const [result] = await conexao.query(
-      "UPDATE tbl_categoria SET nome_categoria = ?, url_categoria = ?, status_categoria = ? WHERE id_categoria = ?",
+      "UPDATE tbl_categoria SET nome_categoria = ?, url_categoria = ?, status_categoria = ?, headline_categoria = ?, subheadline_categoria = ? WHERE id_categoria = ?",
       [
         category.nome_categoria,
         category.url_categoria,
         category.status_categoria,
+        category.headline_categoria,
+        category.subheadline_categoria,
         req.params.id,
       ],
     );
@@ -824,5 +833,27 @@ export const rejectGroupSubmission = async (req, res) => {
     res.json({ mensagem: "Solicitacao recusada." });
   } catch (error) {
     databaseError(res, error, "Erro ao recusar solicitacao.");
+  }
+};
+
+export const getSiteSettings = async (_req, res) => {
+  try {
+    res.json({ popunder: await getPopunderSettings() });
+  } catch (error) {
+    databaseError(res, error, "Erro ao buscar as configurações do site.");
+  }
+};
+
+export const updateSiteSettings = async (req, res) => {
+  const popunder = normalizePopunderSettings(req.body?.popunder);
+  if (!popunder)
+    return res.status(400).json({
+      erro: "Informe até 20 links HTTPS válidos (um por linha). Com o pop under ativo, ao menos um link é obrigatório.",
+    });
+  try {
+    await savePopunderSettings(popunder);
+    res.json({ mensagem: "Configurações do site salvas com sucesso.", popunder });
+  } catch (error) {
+    databaseError(res, error, "Erro ao salvar as configurações do site.");
   }
 };

@@ -1,6 +1,7 @@
 import './Login.css'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { RefreshCw } from 'lucide-react'
 import { saveAdminSession } from '../../auth'
 import { apiUrl } from '../../config/api'
 import PageMeta from '../../components/PageMeta'
@@ -10,8 +11,32 @@ function Login() {
   const location = useLocation();
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [captcha, setCaptcha] = useState<{ token: string; image: string } | null>(null)
+  const [captchaAnswer, setCaptchaAnswer] = useState('')
+  const [isCaptchaLoading, setIsCaptchaLoading] = useState(false)
 
- 
+  // Cada imagem de captcha vale para uma única tentativa de login.
+  const loadCaptcha = useCallback(async () => {
+    setIsCaptchaLoading(true)
+    setCaptchaAnswer('')
+    try {
+      const resposta = await fetch(apiUrl('/api/login/captcha'), { cache: 'no-store' })
+      const dados = await resposta.json()
+      if (!resposta.ok || !dados.token || !dados.image) throw new Error(dados.erro || 'Não foi possível carregar o captcha.')
+      setCaptcha({ token: dados.token, image: dados.image })
+    } catch (erro) {
+      setCaptcha(null)
+      setErrorMessage(erro instanceof Error ? erro.message : 'Não foi possível carregar o captcha.')
+    } finally {
+      setIsCaptchaLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadCaptcha(), 0)
+    return () => window.clearTimeout(timer)
+  }, [loadCaptcha])
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setErrorMessage('')
@@ -22,7 +47,11 @@ function Login() {
     const email = form.email.value
     const password = form.password.value
 
- 
+    if (!captcha) {
+      setErrorMessage('Aguarde o captcha carregar e tente novamente.')
+      setIsLoading(false)
+      return
+    }
 
     try {
       const resposta = await fetch(apiUrl('/api/login'), {
@@ -33,6 +62,8 @@ function Login() {
         body: JSON.stringify({
           email,
           password,
+          captchaToken: captcha.token,
+          captchaAnswer,
         }),
       })
 
@@ -47,11 +78,13 @@ function Login() {
           navigate(requestedPath, { replace: true })
         } else {
           setErrorMessage(dados.erro || 'Não foi possível entrar.')
+          void loadCaptcha()
         }
 
     } catch (erro) {
       console.error('Erro ao conectar com a API:', erro)
       setErrorMessage('Não foi possível conectar ao servidor.')
+      void loadCaptcha()
     } finally {
       setIsLoading(false)
     }
@@ -109,9 +142,45 @@ function Login() {
           </div>
 
 
+          <div className="login-field">
+            <label htmlFor="captcha">
+              Verificação
+            </label>
+
+            <div className="login-captcha">
+              {captcha
+                ? <img alt="Imagem com os caracteres de verificação" height={64} src={captcha.image} width={200} />
+                : <span className="login-captcha-placeholder">{isCaptchaLoading ? 'Carregando…' : 'Captcha indisponível'}</span>}
+              <button
+                aria-label="Gerar outra imagem"
+                className="login-captcha-refresh"
+                disabled={isCaptchaLoading}
+                onClick={() => void loadCaptcha()}
+                title="Gerar outra imagem"
+                type="button"
+              >
+                <RefreshCw size={18} />
+              </button>
+            </div>
+
+            <input
+              id="captcha"
+              name="captcha"
+              type="text"
+              placeholder="Digite os caracteres da imagem"
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              maxLength={8}
+              onChange={(event) => setCaptchaAnswer(event.target.value.toUpperCase())}
+              value={captchaAnswer}
+              required
+            />
+          </div>
+
           <button
             className="login-submit"
-            disabled={isLoading}
+            disabled={isLoading || !captcha}
             type="submit"
           >
             {isLoading ? 'Entrando...' : 'Entrar'}
