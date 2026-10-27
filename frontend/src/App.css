@@ -1196,6 +1196,41 @@ main {
   line-height: 1.35;
 }
 
+.info-breadcrumb {
+  margin-bottom: 18px;
+}
+
+.legal-content a:not(.telegram-button) {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.info-list {
+  margin: 0;
+  padding-left: 22px;
+  color: var(--text);
+  line-height: 1.75;
+}
+
+.info-list li + li {
+  margin-top: 6px;
+}
+
+.info-content .faq-item p {
+  margin: -3px 0 21px;
+}
+
+.info-content .faq-list {
+  margin-top: 12px;
+}
+
+.info-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
 .age-notice-backdrop {
   position: fixed;
   z-index: 20;

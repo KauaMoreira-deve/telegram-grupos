@@ -128,6 +128,22 @@ const websiteNode = {
   inLanguage: 'pt-BR',
 };
 
+// Páginas institucionais do menu; mantidas em sincronia com AboutPage, HowToJoinPage e FaqPage do frontend.
+const infoPages = {
+  '/sobre': {
+    title: 'Sobre o Putaria no Telegram',
+    description: 'Conheça o Putaria no Telegram: diretório gratuito de grupos adultos e canais +18 do Telegram, com links verificados e organizados por categoria.',
+  },
+  '/como-entrar-em-grupos-telegram': {
+    title: 'Como entrar em grupos de putaria no Telegram',
+    description: 'Passo a passo para entrar em grupos de putaria no Telegram: escolha a categoria, veja os detalhes e entre grátis, sem cadastro.',
+  },
+  '/perguntas-frequentes': {
+    title: 'Perguntas frequentes sobre grupos +18',
+    description: 'Respostas sobre grupos de putaria no Telegram: como entrar, se os links são verificados, se é grátis, grupo ou canal e como divulgar seu grupo.',
+  },
+};
+
 /**
  * Resolve as metas da rota. Pode devolver { redirect } para URLs com slug antigo.
  */
@@ -142,6 +158,26 @@ async function resolveMeta(pathname) {
   }
   if (pathname === '/termos-de-uso') {
     return { status: 200, meta: { title: 'Termos de uso', description: `Termos de uso do ${SITE_NAME}.`, path: pathname } };
+  }
+  const infoPage = infoPages[pathname];
+  if (infoPage) {
+    return {
+      status: 200,
+      meta: {
+        ...infoPage,
+        path: pathname,
+        structuredData: [
+          websiteNode,
+          {
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Início', item: siteUrl('/') },
+              { '@type': 'ListItem', position: 2, name: infoPage.title, item: siteUrl(pathname) },
+            ],
+          },
+        ],
+      },
+    };
   }
   if (pathname === '/dash' || pathname === '/login' || pathname === '/admin' || pathname.startsWith('/admin/')) {
     return { status: 200, meta: { title: 'Administração', description: 'Área administrativa.', path: pathname, noIndex: true } };

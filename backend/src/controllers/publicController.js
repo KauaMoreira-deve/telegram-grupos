@@ -207,6 +207,9 @@ export const getSitemap = async (_req, res) => {
     const urls = [
       { path: '/', changeFrequency: 'daily', priority: '1.0' },
       { path: '/categorias', changeFrequency: 'daily', priority: '0.8' },
+      { path: '/como-entrar-em-grupos-telegram', changeFrequency: 'monthly', priority: '0.6' },
+      { path: '/perguntas-frequentes', changeFrequency: 'monthly', priority: '0.6' },
+      { path: '/sobre', changeFrequency: 'monthly', priority: '0.5' },
       { path: '/adicionar-grupo', changeFrequency: 'monthly', priority: '0.6' },
       { path: '/termos-de-uso', changeFrequency: 'monthly', priority: '0.3' },
       ...categoriesResult[0].map((category) => ({

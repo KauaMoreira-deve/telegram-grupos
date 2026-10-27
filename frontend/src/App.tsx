@@ -255,11 +255,11 @@ function SiteHeader() {
 
   const navigation = (
     <ul className="topo-cont">
-      <li><a href="/#home" onClick={() => setMenuOpen(false)}>Início</a></li>
-      <li><a href="/#groups" onClick={() => setMenuOpen(false)}>Grupos</a></li>
+      <li><Link to="/" onClick={() => setMenuOpen(false)}>Início</Link></li>
       <li><Link to="/categorias" onClick={() => setMenuOpen(false)}>Categorias</Link></li>
-      <li><Link to="/adicionar-grupo" onClick={() => setMenuOpen(false)}>Adicionar grupo</Link></li>
-      <li><a href="/#faq" onClick={() => setMenuOpen(false)}>FAQ</a></li>
+      <li><Link to="/como-entrar-em-grupos-telegram" onClick={() => setMenuOpen(false)}>Como entrar</Link></li>
+      <li><Link to="/perguntas-frequentes" onClick={() => setMenuOpen(false)}>FAQ</Link></li>
+      <li><Link to="/sobre" onClick={() => setMenuOpen(false)}>Sobre</Link></li>
       <li><Link to="/termos-de-uso" onClick={() => setMenuOpen(false)}>Termos de uso</Link></li>
       <li><Button href="/adicionar-grupo">Adicione seu grupo</Button></li>
     </ul>
@@ -329,11 +329,12 @@ function SiteFooter() {
         </div>
         <div className="footer-links">
           <span>Links rápidos</span>
-          <a href="/#home">Início</a>
-          <a href="/#groups">Grupos</a>
+          <Link to="/">Início</Link>
           <Link to="/categorias">Categorias</Link>
+          <Link to="/como-entrar-em-grupos-telegram">Como entrar nos grupos</Link>
+          <Link to="/perguntas-frequentes">Perguntas frequentes</Link>
+          <Link to="/sobre">Sobre</Link>
           <Link to="/adicionar-grupo">Adicionar grupo</Link>
-          <a href="/#faq">Perguntas frequentes</a>
           <Link to="/termos-de-uso">Termos de uso</Link>
         </div>
         <div className="footer-links footer-catalog">
@@ -377,6 +378,147 @@ function TermsOfUsePage() {
         <section><h2>7. Alterações e contato</h2><p>Estes termos podem ser atualizados para refletir mudanças na plataforma ou na legislação aplicável. Para solicitar a revisão de um grupo ou reportar uma violação, utilize os canais de contato divulgados pela administração.</p></section>
       </article>
     </main>
+  );
+}
+
+type InfoSection = { title: string; content: React.ReactNode };
+
+// Páginas institucionais fixas do menu. Reaproveitam o visual dos termos de uso.
+function InfoPage({ eyebrow, title, description, path, intro, sections, structuredData }: { eyebrow: string; title: string; description: string; path: string; intro: React.ReactNode; sections: InfoSection[]; structuredData?: Record<string, unknown>[] }) {
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, []);
+
+  const pageStructuredData = useMemo(() => [
+    {
+      '@type': 'WebPage',
+      '@id': `${siteUrl(path)}#webpage`,
+      url: siteUrl(path),
+      name: title,
+      description,
+      inLanguage: 'pt-BR',
+      isPartOf: { '@id': `${siteUrl('/')}#website` },
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Início', item: siteUrl('/') },
+        { '@type': 'ListItem', position: 2, name: title, item: siteUrl(path) },
+      ],
+    },
+    ...(structuredData || []),
+  ], [description, path, structuredData, title]);
+
+  return (
+    <main className="legal-page">
+      <PageMeta description={description} path={path} structuredData={pageStructuredData} title={title} />
+      <article aria-labelledby="info-title" className="legal-content info-content">
+        <nav aria-label="Navegação estrutural" className="category-breadcrumb info-breadcrumb">
+          <Link to="/">Início</Link><span aria-hidden="true">›</span><span>{eyebrow}</span>
+        </nav>
+        <span className="legal-eyebrow">{eyebrow.toLocaleUpperCase('pt-BR')}</span>
+        <h1 id="info-title">{title}</h1>
+        <p>{intro}</p>
+        {sections.map((section) => <section key={section.title}><h2>{section.title}</h2>{section.content}</section>)}
+        <div className="info-actions">
+          <Button className="hero-groups-button" href="/#groups">Ver grupos agora</Button>
+          <Button className="hero-submit-button" href="/categorias">Ver categorias</Button>
+        </div>
+      </article>
+    </main>
+  );
+}
+
+function AboutPage() {
+  return (
+    <InfoPage
+      description="Conheça o Putaria no Telegram: diretório gratuito de grupos adultos e canais +18 do Telegram, com links verificados e organizados por categoria."
+      eyebrow="Sobre"
+      intro={<>O <strong>{SITE_NAME}</strong> é um diretório gratuito de <Link to="/">grupos de putaria no Telegram</Link> e canais +18. Reunimos comunidades adultas em um só lugar, organizadas por categoria, para você encontrar links que funcionam sem perder tempo.</>}
+      path="/sobre"
+      sections={[
+        { title: 'O que você encontra aqui', content: <p>Grupos e canais adultos do Telegram de diversas <Link to="/categorias">categorias</Link>, como amadoras, novinhas, casais, gays, grávidas e muito mais. Cada grupo tem nome, descrição, número de membros e link de acesso, para você escolher antes de abrir o aplicativo.</p> },
+        { title: 'Links verificados automaticamente', content: <p>Um verificador automático testa os convites periodicamente. Links mortos ou expirados são detectados e removidos da lista, então você só encontra grupos que realmente funcionam.</p> },
+        { title: 'Gratuito e sem cadastro', content: <p>Não é preciso criar conta para navegar ou entrar nos grupos. Basta escolher a comunidade, tocar em "Entrar no grupo" e participar pelo Telegram. Veja o passo a passo em <Link to="/como-entrar-em-grupos-telegram">como entrar em grupos do Telegram</Link>.</p> },
+        { title: 'Divulgue sua comunidade', content: <p>Administra um grupo ou canal adulto? <Link to="/adicionar-grupo">Envie seu grupo</Link> pelo formulário. Todos os envios passam por análise antes de aparecer no diretório.</p> },
+        { title: 'Exclusivo para maiores de 18 anos', content: <p>O site é destinado apenas a pessoas com 18 anos ou mais. Não aceitamos conteúdo envolvendo menores de idade: pedofilia é crime. Se encontrar algo ilegal, denuncie pelo Disque 100 ou 181. Leia também os <Link to="/termos-de-uso">termos de uso</Link>.</p> },
+      ]}
+      title="Sobre o Putaria no Telegram"
+    />
+  );
+}
+
+function HowToJoinPage() {
+  return (
+    <InfoPage
+      description="Passo a passo para entrar em grupos de putaria no Telegram: escolha a categoria, veja os detalhes e entre grátis, sem cadastro."
+      eyebrow="Como entrar"
+      intro={<>Entrar em um <strong>grupo de putaria no Telegram</strong> pelo {SITE_NAME} é rápido, gratuito e não exige cadastro no site. Veja o passo a passo e algumas dicas para aproveitar as comunidades +18.</>}
+      path="/como-entrar-em-grupos-telegram"
+      sections={[
+        {
+          title: 'Passo a passo',
+          content: (
+            <ol className="info-list">
+              <li>Tenha o aplicativo do Telegram instalado no celular ou no computador.</li>
+              <li>Escolha uma das <Link to="/categorias">categorias</Link> ou use a busca na <Link to="/">página inicial</Link> para encontrar o grupo que procura.</li>
+              <li>Abra o card do grupo e leia a descrição, o número de membros e as hashtags.</li>
+              <li>Toque no botão "Entrar no grupo". Você será redirecionado para o Telegram.</li>
+              <li>No Telegram, toque em "Entrar" ou "Participar" para fazer parte da comunidade gratuitamente.</li>
+            </ol>
+          ),
+        },
+        { title: 'Grupo ou canal: qual a diferença?', content: <p>No grupo, todos os membros conversam e postam, como em um chat de putaria. No canal, apenas os administradores publicam e você acompanha o conteúdo. No diretório você encontra os dois formatos, sempre +18.</p> },
+        { title: 'E se o link não funcionar?', content: <p>Nosso verificador automático testa os convites periodicamente e remove os grupos que caíram ou expiraram. Mesmo assim, um link pode cair entre uma verificação e outra; nesse caso, escolha outro grupo da mesma categoria.</p> },
+        { title: 'Dicas de segurança', content: <p>Cada comunidade tem regras e administração próprias. Leia as orientações dos administradores, desconfie de pedidos de pagamento fora do comum e nunca compartilhe dados pessoais. Conteúdo envolvendo menores é crime: denuncie pelo Disque 100 ou 181.</p> },
+      ]}
+      title="Como entrar em grupos de putaria no Telegram"
+    />
+  );
+}
+
+const faqStructuredData = [{
+  '@type': 'FAQPage',
+  mainEntity: faqItems.map((item) => ({
+    '@type': 'Question',
+    name: item.question,
+    acceptedAnswer: { '@type': 'Answer', text: item.answer },
+  })),
+}];
+
+function FaqPage() {
+  const [openFaq, setOpenFaq] = useState(0);
+
+  return (
+    <InfoPage
+      description="Respostas sobre grupos de putaria no Telegram: como entrar, se os links são verificados, se é grátis, grupo ou canal e como divulgar seu grupo."
+      eyebrow="Perguntas frequentes"
+      intro={<>Tire suas dúvidas sobre o {SITE_NAME} e sobre como encontrar e participar de grupos adultos no Telegram.</>}
+      path="/perguntas-frequentes"
+      sections={[{
+        title: 'Dúvidas mais comuns',
+        content: (
+          <div className="faq-list">
+            {faqItems.map((item, index) => {
+              const isOpen = openFaq === index;
+              return (
+                <article className={`faq-item ${isOpen ? 'is-open' : ''}`} key={item.question}>
+                  <h3>
+                    <button aria-controls={`faq-page-answer-${index}`} aria-expanded={isOpen} onClick={() => setOpenFaq(isOpen ? -1 : index)} type="button">
+                      {item.question}
+                      <span aria-hidden="true">{isOpen ? '−' : '+'}</span>
+                    </button>
+                  </h3>
+                  <p hidden={!isOpen} id={`faq-page-answer-${index}`}>{item.answer}</p>
+                </article>
+              );
+            })}
+          </div>
+        ),
+      }]}
+      structuredData={faqStructuredData}
+      title="Perguntas frequentes sobre grupos +18"
+    />
   );
 }
 
@@ -1239,6 +1381,9 @@ function App() {
             <Route path="/adicionar-grupo" element={<AddGroupPage />} />
             <Route path="/grupos/:slug" element={<GroupDetailsPage />} />
             <Route path="/termos-de-uso" element={<TermsOfUsePage />} />
+            <Route path="/sobre" element={<AboutPage />} />
+            <Route path="/como-entrar-em-grupos-telegram" element={<HowToJoinPage />} />
+            <Route path="/perguntas-frequentes" element={<FaqPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
           <Route path="/login" element={<Navigate replace to="/dash" />} />
