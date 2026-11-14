@@ -6,8 +6,13 @@ import { findPublicGroup, loadPublicCategories } from '../controllers/publicCont
 // canonical da página inicial em todas as URLs (ex.: /grupos/nome-36).
 const SITE_NAME = 'Putaria no Telegram';
 const SITE_URL = 'https://putarianotelegram.net';
-const SITE_DESCRIPTION = 'Encontre grupos adultos e canais +18 no Telegram com links ativos, categorias variadas e acesso gratuito. Conteúdo exclusivo para maiores de 18 anos.';
-const HOME_TITLE = 'Grupos adultos no Telegram (+18): links ativos';
+const SITE_HOST = new URL(SITE_URL).hostname;
+// Mantidos em sincronia com frontend/src/config/site.ts.
+const SITE_DESCRIPTION = 'Grupos de putaria e canais adultos no Telegram (+18) com links ativos e verificação automática. Amadoras, casais, gays e mais: grátis e sem cadastro.';
+const HOME_TITLE = 'Grupos de Putaria no Telegram +18: links ativos e verificados';
+// Imagem de compartilhamento padrão (cópia estável de src/assets/imagem-grupos.webp).
+const DEFAULT_IMAGE = { url: `${SITE_URL}/og-image.webp`, width: 800, height: 450, alt: 'Grupos de putaria no Telegram +18' };
+const TITLE_MAX_LENGTH = 70;
 
 let templateCache = null;
 
@@ -38,14 +43,21 @@ function groupPath(group) {
   return `/grupos/${slugifyGroupName(group.name)}-${group.id}`;
 }
 
-// Mesma regra do componente PageMeta do frontend.
-function fullTitle(title) {
+// Corta no último espaço para não deixar palavras pela metade no resultado de busca.
+function truncateAtWord(text, maxLength) {
+  if (text.length <= maxLength) return text;
+  const cut = text.slice(0, maxLength + 1);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > maxLength * 0.6 ? cut.slice(0, lastSpace) : text.slice(0, maxLength)).replace(/[\s,.;:|–-]+$/, '');
+}
+
+// Mesma regra do componente PageMeta do frontend: a marca só entra quando cabe
+// inteira; títulos longos perdem a marca antes de perder palavras.
+export function fullTitle(title) {
   const cleanTitle = String(title || '').replace(/\s+/g, ' ').trim() || SITE_NAME;
-  const hasBrand = cleanTitle === SITE_NAME || cleanTitle.includes(SITE_NAME);
-  const suffix = ` | ${SITE_NAME}`;
-  const branded = hasBrand ? cleanTitle : `${cleanTitle}${suffix}`;
-  if (branded.length <= 70) return branded;
-  return hasBrand ? branded.slice(0, 70).trim() : `${cleanTitle.slice(0, 70 - suffix.length).trim()}${suffix}`;
+  if (cleanTitle.includes(SITE_NAME)) return truncateAtWord(cleanTitle, TITLE_MAX_LENGTH);
+  const branded = `${cleanTitle} | ${SITE_NAME}`;
+  return branded.length <= TITLE_MAX_LENGTH ? branded : truncateAtWord(cleanTitle, TITLE_MAX_LENGTH);
 }
 
 function cleanDescription(value) {
@@ -66,9 +78,16 @@ function categoryTitle(category) {
   return category.headline?.trim() || `Grupos de ${category.name} no Telegram +18`;
 }
 
-function categoryDescription(category) {
-  return category.subheadline?.trim()
-    || `Veja grupos de ${category.name} no Telegram para maiores de 18 anos. Encontre links ativos, descrições e comunidades adultas da categoria.`;
+// Mantida em sincronia com categoryMetaDescription() do frontend. A subheadline
+// escrita no painel tem prioridade; sem ela, a descrição usa o total de grupos
+// para não repetir o mesmo texto em todas as categorias.
+export function categoryDescription(category) {
+  const subheadline = category.subheadline?.trim();
+  if (subheadline) return subheadline;
+  const count = Number(category.groupCount) || 0;
+  const groups = count === 1 ? `1 grupo de ${category.name}` : count > 1 ? `${count} grupos de ${category.name}` : `Grupos de ${category.name}`;
+  const links = count === 1 ? 'com link ativo e verificado' : 'com links ativos e verificados';
+  return `${groups} no Telegram (+18) ${links}. Veja descrição e número de membros e entre grátis, sem cadastro.`;
 }
 
 async function loadTemplate(indexFile, cacheTemplate) {
@@ -79,7 +98,7 @@ async function loadTemplate(indexFile, cacheTemplate) {
     .replace(/<title>[\s\S]*?<\/title>\s*/i, '')
     .replace(/<meta\s+name="(?:description|robots)"[^>]*>\s*/gi, '')
     .replace(/<link\s+rel="canonical"[^>]*>\s*/gi, '')
-    .replace(/<meta\s+property="og:(?:title|description|url|type|image|image:alt)"[^>]*>\s*/gi, '')
+    .replace(/<meta\s+property="og:(?:title|description|url|type|image(?::alt|:width|:height)?)"[^>]*>\s*/gi, '')
     .replace(/<meta\s+name="twitter:(?:card|title|description|image|image:alt)"[^>]*>\s*/gi, '')
     .replace(/<script[^>]*data-page-structured-data[^>]*>[\s\S]*?<\/script>\s*/gi, '');
   if (cacheTemplate) templateCache = template;
@@ -90,7 +109,11 @@ function renderHead(meta) {
   const title = fullTitle(meta.title);
   const description = cleanDescription(meta.description);
   const canonical = siteUrl(meta.path || '/');
-  const image = meta.image && /^https:\/\//i.test(meta.image) ? meta.image : '';
+  const ownImage = meta.image && /^https:\/\//i.test(meta.image) ? meta.image : '';
+  // Páginas indexáveis sem imagem própria usam a imagem padrão no compartilhamento.
+  const defaultImage = !ownImage && !meta.noIndex ? DEFAULT_IMAGE : null;
+  const image = ownImage || defaultImage?.url || '';
+  const imageAlt = ownImage ? meta.imageAlt || title : defaultImage?.alt;
   const tags = [
     `<title>${escapeHtml(title)}</title>`,
     `<meta name="description" content="${escapeHtml(description)}" />`,
@@ -107,9 +130,15 @@ function renderHead(meta) {
   if (image) {
     tags.push(
       `<meta property="og:image" content="${escapeHtml(image)}" />`,
-      `<meta property="og:image:alt" content="${escapeHtml(meta.imageAlt || title)}" />`,
+      `<meta property="og:image:alt" content="${escapeHtml(imageAlt)}" />`,
       `<meta name="twitter:image" content="${escapeHtml(image)}" />`,
-      `<meta name="twitter:image:alt" content="${escapeHtml(meta.imageAlt || title)}" />`,
+      `<meta name="twitter:image:alt" content="${escapeHtml(imageAlt)}" />`,
+    );
+  }
+  if (defaultImage) {
+    tags.push(
+      `<meta property="og:image:width" content="${defaultImage.width}" />`,
+      `<meta property="og:image:height" content="${defaultImage.height}" />`,
     );
   }
   if (meta.structuredData) {
@@ -123,23 +152,35 @@ const websiteNode = {
   '@type': 'WebSite',
   '@id': `${SITE_URL}/#website`,
   name: SITE_NAME,
-  alternateName: 'Grupos adultos no Telegram',
+  alternateName: 'PutariaNoTelegram',
   url: `${SITE_URL}/`,
   inLanguage: 'pt-BR',
 };
 
+// Textos mantidos em sincronia com AddGroupPage, TermsOfUsePage e CategoriesPage do frontend.
+const ADD_GROUP_META = {
+  title: 'Adicione seu grupo +18 do Telegram grátis',
+  description: 'Divulgue grátis seu grupo ou canal adulto do Telegram: envie o link público e a descrição para análise. Após a aprovação, ele aparece no diretório.',
+};
+const TERMS_DESCRIPTION = `Termos de uso do ${SITE_NAME}: requisito de idade (18+), responsabilidade pelo conteúdo dos grupos, envio de grupos e links externos.`;
+const CATEGORIES_DESCRIPTION = 'Escolha uma categoria e encontre grupos de putaria no Telegram com links ativos: amadores, casais, gays, lésbicas, hentai, fetiches e muito mais.';
+
 // Páginas institucionais do menu; mantidas em sincronia com AboutPage, HowToJoinPage e FaqPage do frontend.
+// `breadcrumb` é o mesmo rótulo exibido na trilha de navegação visível da página.
 const infoPages = {
   '/sobre': {
     title: 'Sobre o Putaria no Telegram',
+    breadcrumb: 'Sobre',
     description: 'Conheça o Putaria no Telegram: diretório gratuito de grupos adultos e canais +18 do Telegram, com links verificados e organizados por categoria.',
   },
   '/como-entrar-em-grupos-telegram': {
     title: 'Como entrar em grupos de putaria no Telegram',
+    breadcrumb: 'Como entrar',
     description: 'Passo a passo para entrar em grupos de putaria no Telegram: escolha a categoria, veja os detalhes e entre grátis, sem cadastro.',
   },
   '/perguntas-frequentes': {
     title: 'Perguntas frequentes sobre grupos +18',
+    breadcrumb: 'Perguntas frequentes',
     description: 'Respostas sobre grupos de putaria no Telegram: como entrar, se os links são verificados, se é grátis, grupo ou canal e como divulgar seu grupo.',
   },
 };
@@ -154,17 +195,18 @@ async function resolveMeta(pathname) {
     return { status: 200, meta: { title: HOME_TITLE, description: SITE_DESCRIPTION, path: '/', structuredData: [websiteNode] } };
   }
   if (pathname === '/adicionar-grupo') {
-    return { status: 200, meta: { title: 'Adicionar grupo', description: `Envie seu grupo para análise no ${SITE_NAME}.`, path: pathname } };
+    return { status: 200, meta: { title: ADD_GROUP_META.title, description: ADD_GROUP_META.description, path: pathname } };
   }
   if (pathname === '/termos-de-uso') {
-    return { status: 200, meta: { title: 'Termos de uso', description: `Termos de uso do ${SITE_NAME}.`, path: pathname } };
+    return { status: 200, meta: { title: 'Termos de uso', description: TERMS_DESCRIPTION, path: pathname } };
   }
   const infoPage = infoPages[pathname];
   if (infoPage) {
     return {
       status: 200,
       meta: {
-        ...infoPage,
+        title: infoPage.title,
+        description: infoPage.description,
         path: pathname,
         structuredData: [
           websiteNode,
@@ -172,7 +214,7 @@ async function resolveMeta(pathname) {
             '@type': 'BreadcrumbList',
             itemListElement: [
               { '@type': 'ListItem', position: 1, name: 'Início', item: siteUrl('/') },
-              { '@type': 'ListItem', position: 2, name: infoPage.title, item: siteUrl(pathname) },
+              { '@type': 'ListItem', position: 2, name: infoPage.breadcrumb, item: siteUrl(pathname) },
             ],
           },
         ],
@@ -187,7 +229,7 @@ async function resolveMeta(pathname) {
       status: 200,
       meta: {
         title: 'Categorias de grupos +18 no Telegram',
-        description: 'Escolha uma categoria e encontre grupos adultos do Telegram com links ativos: amadoras, casais, novinhas, gays e muito mais.',
+        description: CATEGORIES_DESCRIPTION,
         path: '/categorias',
         structuredData: [websiteNode],
       },
@@ -269,6 +311,29 @@ async function resolveMeta(pathname) {
 }
 
 /**
+ * Redireciona (301) para a URL canônica: www → domínio principal, barra final
+ * removida e /index.html → /. Evita que o mesmo conteúdo responda 200 em vários
+ * endereços. A API só é afetada pelo redirecionamento do www.
+ */
+export function canonicalRedirect(req, res, next) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+
+  const isWwwHost = req.hostname === `www.${SITE_HOST}`;
+  const isApi = req.path === '/api' || req.path.startsWith('/api/');
+  let pathname = req.path;
+  if (!isApi) {
+    if (pathname === '/index.html') pathname = '/';
+    else if (pathname.length > 1 && pathname.endsWith('/')) pathname = pathname.replace(/\/+$/, '') || '/';
+  }
+  if (!isWwwHost && pathname === req.path) return next();
+
+  // Barras ou contrabarras iniciais repetidas virariam um endereço de outro domínio.
+  const safePath = `/${pathname.replace(/^[/\\]+/, '')}`;
+  const query = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+  return res.redirect(301, `${isWwwHost ? SITE_URL : ''}${safePath}${query}`);
+}
+
+/**
  * Middleware que entrega o index.html do frontend com as metas corretas da rota.
  */
 export function createPageRenderer({ indexFile, cacheTemplate = true }) {
@@ -278,9 +343,11 @@ export function createPageRenderer({ indexFile, cacheTemplate = true }) {
       try {
         resolved = await resolveMeta(req.path);
       } catch (error) {
-        // Falha no banco não pode derrubar a página: entrega metas genéricas da própria URL.
+        // Falha no banco não pode derrubar a página: o visitante recebe o site normalmente,
+        // mas com 503 + Retry-After o Google entende que a falha é temporária e volta
+        // depois, em vez de indexar a URL com título e descrição genéricos.
         console.error('Falha ao gerar metas da página.', { code: error.code, name: error.name });
-        resolved = { status: 200, meta: { title: SITE_NAME, description: SITE_DESCRIPTION, path: req.path } };
+        resolved = { status: 503, retryAfterSeconds: 120, meta: { title: SITE_NAME, description: SITE_DESCRIPTION, path: req.path } };
       }
 
       if (resolved.redirect) {
@@ -291,6 +358,7 @@ export function createPageRenderer({ indexFile, cacheTemplate = true }) {
       const template = await loadTemplate(indexFile, cacheTemplate);
       const html = template.replace('</head>', `${renderHead(resolved.meta)}\n  </head>`);
       res.setHeader('Cache-Control', 'no-cache');
+      if (resolved.retryAfterSeconds) res.setHeader('Retry-After', String(resolved.retryAfterSeconds));
       res.status(resolved.status).type('html').send(html);
     } catch (error) {
       next(error);

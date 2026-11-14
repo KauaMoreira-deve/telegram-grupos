@@ -5,7 +5,8 @@ function Card({numero, descricao}: {numero: number | string, descricao: string})
         <div className="card-content">
 
             <div className="card">
-                <h3>{numero}</h3>
+                {/* Número em destaque, não título: um <h3> aqui quebrava a hierarquia (H1 → H3 → H2). */}
+                <strong className="card-number">{numero}</strong>
                 <p>{descricao}</p>
             </div>
 

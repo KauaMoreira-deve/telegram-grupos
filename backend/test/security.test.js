@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { app } from '../index.js';
+import { app, markServerReady } from '../index.js';
 import conexao from '../src/config/database.js';
 
 let server;
 let baseUrl;
 
 before(async () => {
+  // Estes testes verificam o servidor já iniciado (banco validado e migrations feitas),
+  // que é o estado de produção. O estado "iniciando" é coberto em readiness.test.js.
+  markServerReady();
   await new Promise((resolve) => {
     server = app.listen(0, '127.0.0.1', resolve);
   });

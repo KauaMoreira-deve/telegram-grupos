@@ -184,6 +184,17 @@ function categorySubheadline(category: PublicCategory) {
   return category.subheadline?.trim() || `Veja grupos de ${category.name} no Telegram para maiores de 18 anos. Encontre links ativos, descrições e comunidades adultas da categoria.`;
 }
 
+// Descrição para buscadores; mantida em sincronia com categoryDescription() do backend (seoRenderer.js).
+// A subheadline escrita no painel tem prioridade; sem ela, usa o total de grupos da categoria.
+function categoryMetaDescription(category: PublicCategory) {
+  const subheadline = category.subheadline?.trim();
+  if (subheadline) return subheadline;
+  const count = Number(category.groupCount) || 0;
+  const groups = count === 1 ? `1 grupo de ${category.name}` : count > 1 ? `${count} grupos de ${category.name}` : `Grupos de ${category.name}`;
+  const links = count === 1 ? 'com link ativo e verificado' : 'com links ativos e verificados';
+  return `${groups} no Telegram (+18) ${links}. Veja descrição e número de membros e entre grátis, sem cadastro.`;
+}
+
 function groupPath(group: Pick<PublicGroup, 'id' | 'name'>) {
   const nameSlug = group.name
     .normalize('NFD')
@@ -362,7 +373,7 @@ function TermsOfUsePage() {
 
   return (
     <main className="legal-page">
-      <PageMeta description={`Termos de uso do ${SITE_NAME}.`} path="/termos-de-uso" title="Termos de uso" />
+      <PageMeta description={`Termos de uso do ${SITE_NAME}: requisito de idade (18+), responsabilidade pelo conteúdo dos grupos, envio de grupos e links externos.`} path="/termos-de-uso" title="Termos de uso" />
       <article aria-labelledby="terms-title" className="legal-content">
         <span className="legal-eyebrow">INFORMAÇÕES LEGAIS</span>
         <h1 id="terms-title">Termos de uso</h1>
@@ -403,11 +414,11 @@ function InfoPage({ eyebrow, title, description, path, intro, sections, structur
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Início', item: siteUrl('/') },
-        { '@type': 'ListItem', position: 2, name: title, item: siteUrl(path) },
+        { '@type': 'ListItem', position: 2, name: eyebrow, item: siteUrl(path) },
       ],
     },
     ...(structuredData || []),
-  ], [description, path, structuredData, title]);
+  ], [description, eyebrow, path, structuredData, title]);
 
   return (
     <main className="legal-page">
@@ -533,7 +544,7 @@ function PublicLayout() {
       <SiteHeader />
       <Outlet />
       <aside className="safety-poster" aria-label="Aviso de proteção a crianças e adolescentes">
-        <img alt="Pedofilia é crime. Denuncie. Disque 100 ou 181." src={safetyPoster} />
+        <img alt="Pedofilia é crime. Denuncie. Disque 100 ou 181." height={100} loading="lazy" src={safetyPoster} width={300} />
       </aside>
       <SiteFooter />
     </>
@@ -816,7 +827,7 @@ function LandingPage() {
   const canonicalPath = isCategoryPage ? `/categorias/${encodeURIComponent(categorySlug)}` : '/';
   const categoryForMeta: PublicCategory = currentCategory || { id: 0, name: categoryLabel, url: categorySlug };
   const pageTitle = isCategoryPage ? categoryHeadline(categoryForMeta) : HOME_TITLE;
-  const pageDescription = isCategoryPage ? categorySubheadline(categoryForMeta) : SITE_DESCRIPTION;
+  const pageDescription = isCategoryPage ? categoryMetaDescription(categoryForMeta) : SITE_DESCRIPTION;
   const invalidCategory = isCategoryPage && categories.length > 0 && !currentCategory;
   const structuredData = useMemo(() => {
     const pageUrl = siteUrl(canonicalPath);
@@ -825,7 +836,7 @@ function LandingPage() {
         '@type': 'WebSite',
         '@id': `${siteUrl('/')}#website`,
         name: SITE_NAME,
-        alternateName: 'Grupos adultos no Telegram',
+        alternateName: 'PutariaNoTelegram',
         url: siteUrl('/'),
         inLanguage: 'pt-BR',
       },
@@ -850,26 +861,20 @@ function LandingPage() {
       },
     ];
 
+    // A trilha segue a navegação visível da página (Início › Categorias › categoria).
+    // O FAQPage fica só em /perguntas-frequentes: o Google pede que a mesma FAQ seja marcada em uma única URL.
     if (currentCategory) {
       graph.push({
         '@type': 'BreadcrumbList',
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: 'Início', item: siteUrl('/') },
-          { '@type': 'ListItem', position: 2, name: currentCategory.name, item: pageUrl },
+          { '@type': 'ListItem', position: 2, name: 'Categorias', item: siteUrl('/categorias') },
+          { '@type': 'ListItem', position: 3, name: currentCategory.name, item: pageUrl },
         ],
-      });
-    } else if (!isCategoryPage) {
-      graph.push({
-        '@type': 'FAQPage',
-        mainEntity: faqItems.map((item) => ({
-          '@type': 'Question',
-          name: item.question,
-          acceptedAnswer: { '@type': 'Answer', text: item.answer },
-        })),
       });
     }
     return graph;
-  }, [canonicalPath, currentCategory, isCategoryPage, pageDescription, pageTitle, visibleGroups]);
+  }, [canonicalPath, currentCategory, pageDescription, pageTitle, visibleGroups]);
 
   function clearGroupFilters() {
     setCurrentPage(1);
@@ -889,7 +894,7 @@ function LandingPage() {
 
   return (
     <>
-      <PageMeta description={pageDescription} image={imagemGrupos} imageAlt="Diretório de grupos adultos no Telegram" noIndex={invalidCategory} path={canonicalPath} structuredData={structuredData} title={pageTitle} />
+      <PageMeta description={pageDescription} noIndex={invalidCategory} path={canonicalPath} structuredData={structuredData} title={pageTitle} />
       <main>
         {isCategoryPage ? (
           <section className="hero category-hero" id="home">
@@ -1054,7 +1059,7 @@ function CategoriesPage() {
 
   return (
     <main className="categories-page">
-      <PageMeta description="Escolha uma categoria e encontre grupos adultos do Telegram com links ativos: amadoras, casais, novinhas, gays e muito mais." path="/categorias" structuredData={structuredData} title="Categorias de grupos +18 no Telegram" />
+      <PageMeta description="Escolha uma categoria e encontre grupos de putaria no Telegram com links ativos: amadores, casais, gays, lésbicas, hentai, fetiches e muito mais." path="/categorias" structuredData={structuredData} title="Categorias de grupos +18 no Telegram" />
       <section className="categories-content" aria-labelledby="categories-title">
         <span className="categories-eyebrow">CATEGORIAS</span>
         <h1 id="categories-title">Categorias de grupos <span className="gradient-roxo">+18 no Telegram</span></h1>
@@ -1132,7 +1137,7 @@ function AddGroupPage() {
 
   return (
     <main className="add-group-page">
-      <PageMeta description={`Envie seu grupo para análise no ${SITE_NAME}.`} path="/adicionar-grupo" title="Adicionar grupo" />
+      <PageMeta description="Divulgue grátis seu grupo ou canal adulto do Telegram: envie o link público e a descrição para análise. Após a aprovação, ele aparece no diretório." path="/adicionar-grupo" title="Adicione seu grupo +18 do Telegram grátis" />
       <section className="submission-section">
         <div className="submission-content">
           <div className="submission-intro">
@@ -1252,7 +1257,7 @@ function GroupDetailsPage() {
         '@type': 'WebSite',
         '@id': `${siteUrl('/')}#website`,
         name: SITE_NAME,
-        alternateName: 'Grupos adultos no Telegram',
+        alternateName: 'PutariaNoTelegram',
         url: siteUrl('/'),
         inLanguage: 'pt-BR',
       },
@@ -1282,11 +1287,13 @@ function GroupDetailsPage() {
 
   return (
     <main className="group-details-page">
+      {/* Sem noindex aqui: grupo inexistente já sai do servidor com 404 + noindex e vira NotFoundPage.
+          Durante o carregamento ou numa falha temporária da API a página continua indexável,
+          para uma falha passageira (ex.: API reiniciando) não tirar o grupo do Google. */}
       <PageMeta
         description={group ? groupMetaDescription(group) : 'Detalhes de um grupo adulto no Telegram.'}
-        image={group?.image || imagemGrupos}
-        imageAlt={group ? `Imagem do grupo adulto ${group.name} no Telegram` : 'Grupos adultos no Telegram'}
-        noIndex={!group}
+        image={group?.image}
+        imageAlt={group ? `Imagem do grupo adulto ${group.name} no Telegram` : undefined}
         path={group ? groupPath(group) : undefined}
         structuredData={groupStructuredData}
         title={group ? `${group.name}: grupo +18 no Telegram` : 'Grupo adulto no Telegram'}
@@ -1327,7 +1334,7 @@ function GroupDetailsPage() {
             <section className="group-about" aria-labelledby="group-about-title">
               <h2 id="group-about-title">Sobre o {group.name}</h2>
               <p>Grupos de {group.category.toLocaleLowerCase('pt-BR')} no Telegram reúnem conteúdo caseiro e real enviado pelos próprios usuários, sem estúdio. Espere fotos e vídeos amadores, pacotes vazados e postagens ao longo do dia.</p>
-              <p>O {group.name} está listado em <Link to={`/categorias/${encodeURIComponent(group.categoryUrl)}`}>grupos de {group.category.toLocaleLowerCase('pt-BR')} no Telegram</Link> no nosso diretório. Veja mais <Link to="/#groups">categorias</Link> ou confira os <Link to="/#groups">grupos de putaria mais populares</Link> para descobrir canais +18 parecidos.</p>
+              <p>O {group.name} está listado em <Link to={`/categorias/${encodeURIComponent(group.categoryUrl)}`}>grupos de {group.category.toLocaleLowerCase('pt-BR')} no Telegram</Link> no nosso diretório. Veja mais <Link to="/categorias">categorias</Link> ou confira os <Link to="/#groups">grupos de putaria mais populares</Link> para descobrir canais +18 parecidos.</p>
             </section>
             <GroupDetailsFaq group={group} />
           </>

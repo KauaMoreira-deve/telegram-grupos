@@ -188,7 +188,7 @@ export const getSitemap = async (_req, res) => {
   try {
     const [groupsResult, categoriesResult] = await Promise.all([
       conexao.query(`
-        SELECT g.id_grupo AS id, g.nome_grupo AS name,
+        SELECT g.id_grupo AS id, g.nome_grupo AS name, c.url_categoria AS categoryUrl,
           DATE_FORMAT(g.data_criacao_grupo, '%Y-%m-%d') AS lastModified
         FROM tbl_grupo_telegram g
         JOIN tbl_categoria c ON c.id_categoria = g.id_categoria
@@ -204,9 +204,18 @@ export const getSitemap = async (_req, res) => {
       `),
     ]);
 
+    // A página inicial e as categorias mudam quando um grupo novo entra na lista,
+    // então o lastmod delas é a data do grupo mais recente que exibem.
+    const latestByCategory = new Map();
+    let latestGroup = '';
+    for (const group of groupsResult[0]) {
+      if (group.lastModified > latestGroup) latestGroup = group.lastModified;
+      if (group.lastModified > (latestByCategory.get(group.categoryUrl) || '')) latestByCategory.set(group.categoryUrl, group.lastModified);
+    }
+
     const urls = [
-      { path: '/', changeFrequency: 'daily', priority: '1.0' },
-      { path: '/categorias', changeFrequency: 'daily', priority: '0.8' },
+      { path: '/', changeFrequency: 'daily', priority: '1.0', lastModified: latestGroup },
+      { path: '/categorias', changeFrequency: 'daily', priority: '0.8', lastModified: latestGroup },
       { path: '/como-entrar-em-grupos-telegram', changeFrequency: 'monthly', priority: '0.6' },
       { path: '/perguntas-frequentes', changeFrequency: 'monthly', priority: '0.6' },
       { path: '/sobre', changeFrequency: 'monthly', priority: '0.5' },
@@ -216,6 +225,7 @@ export const getSitemap = async (_req, res) => {
         path: `/categorias/${encodeURIComponent(category.url)}`,
         changeFrequency: 'daily',
         priority: '0.8',
+        lastModified: latestByCategory.get(category.url),
       })),
       ...groupsResult[0].map((group) => ({
         path: `/grupos/${encodeURIComponent(slugifyGroupName(group.name))}-${group.id}`,

@@ -1,7 +1,10 @@
 export const SITE_NAME = 'Putaria no Telegram';
 export const SITE_URL = 'https://putarianotelegram.net';
-export const SITE_DESCRIPTION = 'Encontre grupos adultos e canais +18 no Telegram com links ativos, categorias variadas e acesso gratuito. Conteúdo exclusivo para maiores de 18 anos.';
-export const HOME_TITLE = 'Grupos adultos no Telegram (+18): links ativos';
+// Título, descrição e imagem mantidos em sincronia com backend/src/services/seoRenderer.js.
+export const SITE_DESCRIPTION = 'Grupos de putaria e canais adultos no Telegram (+18) com links ativos e verificação automática. Amadoras, casais, gays e mais: grátis e sem cadastro.';
+export const HOME_TITLE = 'Grupos de Putaria no Telegram +18: links ativos e verificados';
+// Cópia estável de src/assets/imagem-grupos.webp em public/, usada no compartilhamento.
+export const DEFAULT_SHARE_IMAGE = { path: '/og-image.webp', width: 800, height: 450, alt: 'Grupos de putaria no Telegram +18' };
 
 export function siteUrl(path = '/') {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;

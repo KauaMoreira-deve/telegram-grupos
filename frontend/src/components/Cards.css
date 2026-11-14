@@ -28,10 +28,13 @@
   box-shadow: var(--neon-glow-strong);
 }
 
-.card h3 {
+/* display e font-weight reproduzem o estilo padrão do <h3> usado antes. */
+.card .card-number {
+  display: block;
   margin: 0 0 6px;
   color: inherit;
   font-size: 1rem;
+  font-weight: 700;
   line-height: 1;
   text-shadow: 0 0 11px rgba(133, 44, 177, 0.58);
 }
@@ -49,7 +52,7 @@
     padding: 18px 14px;
   }
 
-  .card h3 {
+  .card .card-number {
     font-size: 1.7rem;
   }
 
@@ -65,7 +68,7 @@
     border-radius: 11px;
   }
 
-  .card h3 {
+  .card .card-number {
     margin-bottom: 3px;
     font-size: 1.15rem;
   }

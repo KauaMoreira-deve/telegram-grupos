@@ -14,7 +14,7 @@ import {
 import adminRoutes from './src/routes/adminRoutes.js';
 import loginRoutes from './src/routes/loginRoutes.js';
 import publicRoutes from './src/routes/publicRoutes.js';
-import { createPageRenderer } from './src/services/seoRenderer.js';
+import { canonicalRedirect, createPageRenderer } from './src/services/seoRenderer.js';
 import { getSitemap } from './src/controllers/publicController.js';
 
 const app = express();
@@ -29,6 +29,12 @@ const frontendIndexFile = path.join(frontendDistDirectory, 'index.html');
 // terminem e a conexão esteja validada.
 let ready = false;
 let startupError = null;
+
+// Libera os endpoints que dependem do banco. Chamado ao fim da inicialização;
+// os testes também usam para simular um servidor que já terminou de iniciar.
+export function markServerReady() {
+  ready = true;
+}
 
 function readinessGate(_req, res, next) {
   if (ready) return next();
@@ -48,6 +54,7 @@ function readinessGate(_req, res, next) {
 app.disable('x-powered-by');
 app.set('trust proxy', env.trustProxy);
 app.use(securityHeaders);
+app.use(canonicalRedirect);
 app.use(cors({
   origin(origin, callback) {
     if (!origin || allowedOrigins.has('*') || allowedOrigins.has(origin.replace(/\/$/, ''))) {
@@ -69,6 +76,13 @@ app.use(cors({
 app.get('/api/health', (_req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.json({ status: ready ? 'ok' : 'starting' });
+});
+
+// Respostas JSON da API não devem aparecer no Google; o robô continua podendo
+// buscá-las para renderizar as páginas.
+app.use('/api', (_req, res, next) => {
+  res.setHeader('X-Robots-Tag', 'noindex');
+  next();
 });
 
 // ── Rate limiter + body parser ──────────────────────────────────────
@@ -175,7 +189,7 @@ export function startServer() {
     }
 
     // 4. Libera os endpoints para uso.
-    ready = true;
+    markServerReady();
     console.log('Servidor pronto para receber requisições.');
 
     return httpServer;
