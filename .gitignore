@@ -1,6 +1,7 @@
 # Dependências, builds e caches
 **/node_modules/
 **/dist/
+**/dist-server/
 **/build/
 **/coverage/
 **/.nyc_output/

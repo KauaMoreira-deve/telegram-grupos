@@ -156,9 +156,13 @@ async function refreshStaleMemberCounts(groupId = null) {
   return memberRefreshPromise;
 }
 
-export function loadPublicGroups() {
+export function loadPublicGroups({ refreshMembers = true } = {}) {
+  // A API agenda a atualização mesmo quando o SSR já preencheu o cache do catálogo.
+  // O agendamento possui o mesmo TTL e também é invalidado pelas ações administrativas.
+  if (refreshMembers) {
+    void cached('public:members-refresh', PUBLIC_CACHE_MS, refreshStaleMemberCounts).catch(logControllerError);
+  }
   return cached('public:groups', PUBLIC_CACHE_MS, async () => {
-    void refreshStaleMemberCounts().catch(logControllerError);
     const [groups] = await conexao.query(`
       SELECT ${publicGroupFields}
       FROM tbl_grupo_telegram g
@@ -188,8 +192,7 @@ export const getSitemap = async (_req, res) => {
   try {
     const [groupsResult, categoriesResult] = await Promise.all([
       conexao.query(`
-        SELECT g.id_grupo AS id, g.nome_grupo AS name, c.url_categoria AS categoryUrl,
-          DATE_FORMAT(g.data_criacao_grupo, '%Y-%m-%d') AS lastModified
+        SELECT g.id_grupo AS id, g.nome_grupo AS name
         FROM tbl_grupo_telegram g
         JOIN tbl_categoria c ON c.id_categoria = g.id_categoria
         WHERE g.status_grupo = 'ativo' AND c.status_categoria = 'ativo'
@@ -204,18 +207,10 @@ export const getSitemap = async (_req, res) => {
       `),
     ]);
 
-    // A página inicial e as categorias mudam quando um grupo novo entra na lista,
-    // então o lastmod delas é a data do grupo mais recente que exibem.
-    const latestByCategory = new Map();
-    let latestGroup = '';
-    for (const group of groupsResult[0]) {
-      if (group.lastModified > latestGroup) latestGroup = group.lastModified;
-      if (group.lastModified > (latestByCategory.get(group.categoryUrl) || '')) latestByCategory.set(group.categoryUrl, group.lastModified);
-    }
-
+    // Não há data confiável de edição dos grupos: criação não representa lastmod.
     const urls = [
-      { path: '/', changeFrequency: 'daily', priority: '1.0', lastModified: latestGroup },
-      { path: '/categorias', changeFrequency: 'daily', priority: '0.8', lastModified: latestGroup },
+      { path: '/', changeFrequency: 'daily', priority: '1.0' },
+      { path: '/categorias', changeFrequency: 'daily', priority: '0.8' },
       { path: '/como-entrar-em-grupos-telegram', changeFrequency: 'monthly', priority: '0.6' },
       { path: '/perguntas-frequentes', changeFrequency: 'monthly', priority: '0.6' },
       { path: '/sobre', changeFrequency: 'monthly', priority: '0.5' },
@@ -225,30 +220,31 @@ export const getSitemap = async (_req, res) => {
         path: `/categorias/${encodeURIComponent(category.url)}`,
         changeFrequency: 'daily',
         priority: '0.8',
-        lastModified: latestByCategory.get(category.url),
       })),
       ...groupsResult[0].map((group) => ({
         path: `/grupos/${encodeURIComponent(slugifyGroupName(group.name))}-${group.id}`,
         changeFrequency: 'weekly',
         priority: '0.7',
-        lastModified: group.lastModified,
       })),
     ];
 
-    const entries = urls.map((url) => [
+    const uniqueUrls = [...new Map(urls.map((url) => [url.path, url])).values()];
+    const entries = uniqueUrls.map((url) => [
       '  <url>',
       `    <loc>${escapeXml(new URL(url.path, publicSiteUrl).toString())}</loc>`,
-      url.lastModified ? `    <lastmod>${escapeXml(url.lastModified)}</lastmod>` : '',
       `    <changefreq>${url.changeFrequency}</changefreq>`,
       `    <priority>${url.priority}</priority>`,
       '  </url>',
     ].filter(Boolean).join('\n')).join('\n');
 
-    res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
+    // Revalida cada consulta para refletir inclusões, exclusões e grupos desativados.
+    res.setHeader('Cache-Control', 'no-cache');
     res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</urlset>\n`);
   } catch (error) {
     logControllerError(error);
-    res.status(500).type('text/plain').send('Não foi possível gerar o sitemap.');
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Retry-After', '120');
+    res.status(503).type('text/plain').send('Não foi possível gerar o sitemap.');
   }
 };
 
@@ -278,41 +274,46 @@ export const getPublicGroupById = async (req, res) => {
   }
 };
 
+// Compartilha as consultas públicas com o SSR sem executar ações de escrita.
+export function loadPublicStats() {
+  return cached('public:stats', PUBLIC_CACHE_MS, async () => {
+    const [groupsResult, categoriesResult, accessesResult] = await Promise.all([
+      conexao.query(`
+        SELECT COUNT(*) AS totalGroups, COALESCE(SUM(g.quantidade_membros), 0) AS totalMembers
+        FROM tbl_grupo_telegram g
+        JOIN tbl_categoria c ON c.id_categoria = g.id_categoria
+        WHERE g.status_grupo = 'ativo' AND c.status_categoria = 'ativo'
+      `),
+      conexao.query(`
+        SELECT COUNT(*) AS totalCategories
+        FROM tbl_categoria c
+        WHERE c.status_categoria = 'ativo'
+          AND EXISTS (
+            SELECT 1 FROM tbl_grupo_telegram g
+            WHERE g.id_categoria = c.id_categoria AND g.status_grupo = 'ativo'
+          )
+      `),
+      conexao.query(`
+        SELECT COUNT(*) AS totalAccesses
+        FROM tbl_acesso_grupo a
+        JOIN tbl_grupo_telegram g ON g.id_grupo = a.id_grupo
+        JOIN tbl_categoria c ON c.id_categoria = g.id_categoria
+        WHERE g.status_grupo = 'ativo' AND c.status_categoria = 'ativo'
+      `),
+    ]);
+
+    return {
+      totalGroups: groupsResult[0][0].totalGroups,
+      totalMembers: groupsResult[0][0].totalMembers,
+      totalCategories: categoriesResult[0][0].totalCategories,
+      totalAccesses: accessesResult[0][0].totalAccesses,
+    };
+  });
+}
+
 export const getPublicStats = async (_req, res) => {
   try {
-    const stats = await cached('public:stats', PUBLIC_CACHE_MS, async () => {
-      const [groupsResult, categoriesResult, accessesResult] = await Promise.all([
-        conexao.query(`
-          SELECT COUNT(*) AS totalGroups, COALESCE(SUM(g.quantidade_membros), 0) AS totalMembers
-          FROM tbl_grupo_telegram g
-          JOIN tbl_categoria c ON c.id_categoria = g.id_categoria
-          WHERE g.status_grupo = 'ativo' AND c.status_categoria = 'ativo'
-        `),
-        conexao.query(`
-          SELECT COUNT(*) AS totalCategories
-          FROM tbl_categoria c
-          WHERE c.status_categoria = 'ativo'
-            AND EXISTS (
-              SELECT 1 FROM tbl_grupo_telegram g
-              WHERE g.id_categoria = c.id_categoria AND g.status_grupo = 'ativo'
-            )
-        `),
-        conexao.query(`
-          SELECT COUNT(*) AS totalAccesses
-          FROM tbl_acesso_grupo a
-          JOIN tbl_grupo_telegram g ON g.id_grupo = a.id_grupo
-          JOIN tbl_categoria c ON c.id_categoria = g.id_categoria
-          WHERE g.status_grupo = 'ativo' AND c.status_categoria = 'ativo'
-        `),
-      ]);
-
-      return {
-        totalGroups: groupsResult[0][0].totalGroups,
-        totalMembers: groupsResult[0][0].totalMembers,
-        totalCategories: categoriesResult[0][0].totalCategories,
-        totalAccesses: accessesResult[0][0].totalAccesses,
-      };
-    });
+    const stats = await loadPublicStats();
     setPublicCache(res);
     res.json(stats);
   } catch (error) {
@@ -354,29 +355,33 @@ export const getSubmissionCategories = async (_req, res) => {
   }
 };
 
+export function loadFooterCatalog() {
+  return cached('public:footer', PUBLIC_CACHE_MS, async () => {
+    const [categories, hashtags] = await Promise.all([
+      conexao.query(`
+        SELECT DISTINCT c.id_categoria AS id, c.nome_categoria AS name, c.url_categoria AS url
+        FROM tbl_categoria c
+        JOIN tbl_grupo_telegram g ON g.id_categoria = c.id_categoria
+        WHERE c.status_categoria = 'ativo' AND g.status_grupo = 'ativo'
+        ORDER BY c.nome_categoria
+      `),
+      conexao.query(`
+        SELECT DISTINCT h.nome_hashtag AS name
+        FROM tbl_hashtag h
+        JOIN tbl_grupo_hashtag gh ON gh.id_hashtag = h.id_hashtag
+        JOIN tbl_grupo_telegram g ON g.id_grupo = gh.id_grupo
+        JOIN tbl_categoria c ON c.id_categoria = g.id_categoria
+        WHERE g.status_grupo = 'ativo' AND c.status_categoria = 'ativo'
+        ORDER BY h.nome_hashtag
+      `),
+    ]);
+    return { categories: categories[0], hashtags: hashtags[0].map((hashtag) => hashtag.name) };
+  });
+}
+
 export const getFooterCatalog = async (_req, res) => {
   try {
-    const catalog = await cached('public:footer', PUBLIC_CACHE_MS, async () => {
-      const [categories, hashtags] = await Promise.all([
-        conexao.query(`
-          SELECT DISTINCT c.id_categoria AS id, c.nome_categoria AS name, c.url_categoria AS url
-          FROM tbl_categoria c
-          JOIN tbl_grupo_telegram g ON g.id_categoria = c.id_categoria
-          WHERE c.status_categoria = 'ativo' AND g.status_grupo = 'ativo'
-          ORDER BY c.nome_categoria
-        `),
-        conexao.query(`
-          SELECT DISTINCT h.nome_hashtag AS name
-          FROM tbl_hashtag h
-          JOIN tbl_grupo_hashtag gh ON gh.id_hashtag = h.id_hashtag
-          JOIN tbl_grupo_telegram g ON g.id_grupo = gh.id_grupo
-          JOIN tbl_categoria c ON c.id_categoria = g.id_categoria
-          WHERE g.status_grupo = 'ativo' AND c.status_categoria = 'ativo'
-          ORDER BY h.nome_hashtag
-        `),
-      ]);
-      return { categories: categories[0], hashtags: hashtags[0].map((hashtag) => hashtag.name) };
-    });
+    const catalog = await loadFooterCatalog();
     setPublicCache(res, 300);
     res.json(catalog);
   } catch (error) {

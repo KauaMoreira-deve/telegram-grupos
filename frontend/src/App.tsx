@@ -4,13 +4,15 @@ import Button from './components/btn'
 import imagemGrupos from './assets/imagem-grupos.webp'
 import telegramLogo from './assets/telegram.png'
 import safetyPoster from './assets/_image.webp'
-import { lazy, Suspense, useEffect, useEffectEvent, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { BrowserRouter, Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Check, ChevronDown, Clock3, Eye, LayoutGrid, Link2, Menu, MessageCircle, Search, Send, Share2, SlidersHorizontal, ThumbsUp, Users, X } from 'lucide-react'
 import RequireAdmin from './components/RequireAdmin'
 import { apiUrl } from './config/api'
 import PageMeta from './components/PageMeta'
 import { HOME_TITLE, SITE_DESCRIPTION, SITE_NAME, safeImageUrl, safeTelegramUrl, siteUrl } from './config/site'
+import { PublicPageDataContext, usePublicPageData } from './PublicPageData'
+import type { FooterCatalog, PublicCategory, PublicGroup, PublicPageData, PublicStats } from './PublicPageData'
 
 // O painel e o login são carregados sob demanda para não pesar no site público.
 const Login = lazy(() => import('./pages/Login/Login'))
@@ -24,27 +26,6 @@ const DashboardSettings = lazy(() => import('./pages/Dashboard/DashboardSettings
 const DashboardSubmissions = lazy(() => import('./pages/Dashboard/DashboardSubmissions'))
 
 
-type PublicGroup = {
-  id: number;
-  name: string;
-  category: string;
-  categoryUrl: string;
-  description: string;
-  image: string | null;
-  link: string;
-  featured: boolean;
-  members: number | null;
-  accesses: number;
-  likes: number;
-  createdAt: string | null;
-  createdAtIso: string | null;
-  membersUpdatedAt: string | null;
-  hashtags: string[];
-};
-
-type PublicCategory = { id: number; name: string; url: string; headline?: string | null; subheadline?: string | null; groupCount?: number };
-type PublicStats = { totalGroups: number; totalMembers: number; totalCategories: number; totalAccesses: number };
-type FooterCatalog = { categories: PublicCategory[]; hashtags: string[] };
 type SubmissionForm = { nome_grupo: string; id_categoria: string; descricao_grupo: string; link_telegram: string; nome_contato: string; email_contato: string };
 type SortMode = 'recentes' | 'votados' | 'membros' | 'acessados';
 
@@ -107,6 +88,23 @@ function hasOpenedTelegramFolder() {
     return sessionStorage.getItem(telegramFolderGateKey) === 'true';
   } catch {
     return telegramFolderOpenedFallback;
+  }
+}
+
+function subscribeSessionStorage(onChange: () => void) {
+  window.addEventListener('storage', onChange);
+  return () => window.removeEventListener('storage', onChange);
+}
+
+function serverSessionPreference() {
+  return false;
+}
+
+function hasConfirmedAge() {
+  try {
+    return sessionStorage.getItem('age-notice-confirmed') === 'true';
+  } catch {
+    return false;
   }
 }
 
@@ -232,14 +230,20 @@ const faqItems = [
 ];
 
 function AgeNotice() {
-  const [isOpen, setIsOpen] = useState(() => sessionStorage.getItem('age-notice-confirmed') !== 'true');
+  const [isOpen, setIsOpen] = useState(true);
+  // A primeira hidratação usa o mesmo aviso do servidor; depois lê a preferência local.
+  const confirmedAge = useSyncExternalStore(subscribeSessionStorage, hasConfirmedAge, serverSessionPreference);
 
   function confirmAge() {
-    sessionStorage.setItem('age-notice-confirmed', 'true');
+    try {
+      sessionStorage.setItem('age-notice-confirmed', 'true');
+    } catch {
+      // A confirmação continua válida nesta página sem armazenamento disponível.
+    }
     setIsOpen(false);
   }
 
-  if (!isOpen) return null;
+  if (!isOpen || confirmedAge) return null;
 
   return (
     <div className="age-notice-backdrop" role="presentation">
@@ -301,7 +305,8 @@ function SiteHeader() {
 }
 
 function SiteFooter() {
-  const [catalog, setCatalog] = useState<FooterCatalog>({ categories: [], hashtags: [] });
+  const initialData = usePublicPageData();
+  const [catalog, setCatalog] = useState<FooterCatalog>(() => initialData.footerCatalog || { categories: [], hashtags: [] });
 
   useEffect(() => {
     async function fetchFooterCatalog() {
@@ -766,12 +771,13 @@ function GroupCard({ group, onAccess, onLiked }: { group: PublicGroup; onAccess:
 }
 
 function LandingPage() {
+  const initialData = usePublicPageData();
   const { categorySlug = '' } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const [groups, setGroups] = useState<PublicGroup[]>([]);
-  const [categories, setCategories] = useState<PublicCategory[]>([]);
-  const [stats, setStats] = useState<PublicStats>({ totalGroups: 0, totalMembers: 0, totalCategories: 0, totalAccesses: 0 });
+  const [groups, setGroups] = useState<PublicGroup[]>(() => (initialData.groups || []).map(normalizePublicGroup));
+  const [categories, setCategories] = useState<PublicCategory[]>(() => initialData.categories || []);
+  const [stats, setStats] = useState<PublicStats>(() => initialData.stats || { totalGroups: 0, totalMembers: 0, totalCategories: 0, totalAccesses: 0 });
   const [searchQuery, setSearchQuery] = useState('');
   const [sortMode, setSortMode] = useState<SortMode>('recentes');
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
@@ -828,7 +834,7 @@ function LandingPage() {
   const categoryForMeta: PublicCategory = currentCategory || { id: 0, name: categoryLabel, url: categorySlug };
   const pageTitle = isCategoryPage ? categoryHeadline(categoryForMeta) : HOME_TITLE;
   const pageDescription = isCategoryPage ? categoryMetaDescription(categoryForMeta) : SITE_DESCRIPTION;
-  const invalidCategory = isCategoryPage && categories.length > 0 && !currentCategory;
+  const invalidCategory = isCategoryPage && !currentCategory && (categories.length > 0 || (initialData.notFound === true && initialData.pathname === location.pathname));
   const structuredData = useMemo(() => {
     const pageUrl = siteUrl(canonicalPath);
     const graph: Record<string, unknown>[] = [
@@ -1016,8 +1022,9 @@ Explore os melhores grupos de porno, putaria, amadoras e muito mais no Telegram.
 }
 
 function CategoriesPage() {
-  const [categories, setCategories] = useState<PublicCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const initialData = usePublicPageData();
+  const [categories, setCategories] = useState<PublicCategory[]>(() => initialData.categories || []);
+  const [isLoading, setIsLoading] = useState(!initialData.categories);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -1173,12 +1180,20 @@ function AddGroupPage() {
 }
 
 function GroupDetailsPage() {
+  const initialData = usePublicPageData();
+  const location = useLocation();
+  const openedTelegramFolder = useSyncExternalStore(subscribeSessionStorage, hasOpenedTelegramFolder, serverSessionPreference);
   const { slug = '' } = useParams();
   const groupId = slug.match(/(?:^|-)(\d+)$/)?.[1] || '';
-  const [group, setGroup] = useState<PublicGroup | null>(null);
-  const [relatedGroups, setRelatedGroups] = useState<PublicGroup[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isNotFound, setIsNotFound] = useState(false);
+  const previousGroupId = useRef(groupId);
+  const initialGroup = initialData.group && String(initialData.group.id) === groupId ? initialData.group : null;
+  const initialNotFound = initialData.notFound === true && initialData.pathname === location.pathname;
+  const [group, setGroup] = useState<PublicGroup | null>(() => initialGroup ? normalizePublicGroup(initialGroup) : null);
+  const [relatedGroups, setRelatedGroups] = useState<PublicGroup[]>(() => initialGroup
+    ? (initialData.groups || []).map(normalizePublicGroup).filter((item) => item.id !== initialGroup.id).sort((first, second) => Number(second.categoryUrl === initialGroup.categoryUrl) - Number(first.categoryUrl === initialGroup.categoryUrl)).slice(0, 6)
+    : []);
+  const [isLoading, setIsLoading] = useState(!initialGroup && !initialNotFound);
+  const [isNotFound, setIsNotFound] = useState(initialNotFound);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -1186,10 +1201,20 @@ function GroupDetailsPage() {
   }, [groupId]);
 
   useEffect(() => {
+    let isActive = true;
     async function loadGroup() {
-      setIsLoading(true);
+      const hasInitialGroup = Boolean(initialData.group && String(initialData.group.id) === groupId);
+      const changedGroup = previousGroupId.current !== groupId;
+      previousGroupId.current = groupId;
+      setIsLoading(!hasInitialGroup && !initialNotFound);
       setError('');
-      setIsNotFound(false);
+      setIsNotFound(initialNotFound);
+      setGroup((current) => current && String(current.id) === groupId ? current : hasInitialGroup ? normalizePublicGroup(initialData.group!) : null);
+      if (!hasInitialGroup) setRelatedGroups([]);
+      else if (changedGroup) {
+        const restoredGroup = initialData.group!;
+        setRelatedGroups((initialData.groups || []).map(normalizePublicGroup).filter((item) => item.id !== restoredGroup.id).sort((first, second) => Number(second.categoryUrl === restoredGroup.categoryUrl) - Number(first.categoryUrl === restoredGroup.categoryUrl)).slice(0, 6));
+      }
       if (!groupId) {
         setGroup(null);
         setRelatedGroups([]);
@@ -1206,6 +1231,7 @@ function GroupDetailsPage() {
           groupResponse.json().catch(() => ({})),
           groupsResponse.json().catch(() => []),
         ]);
+        if (!isActive) return;
         if (groupResponse.status === 404) {
           setGroup(null);
           setRelatedGroups([]);
@@ -1214,6 +1240,7 @@ function GroupDetailsPage() {
         }
         if (!groupResponse.ok) throw new Error(groupData.erro || 'Não foi possível carregar este grupo.');
         const normalizedGroup = normalizePublicGroup(groupData);
+        setIsNotFound(false);
         setGroup(normalizedGroup);
         const canonicalPath = groupPath(normalizedGroup);
         if (window.location.pathname !== canonicalPath) window.history.replaceState(null, '', canonicalPath);
@@ -1222,13 +1249,14 @@ function GroupDetailsPage() {
           setRelatedGroups(allGroups.filter((item) => item.id !== normalizedGroup.id).sort((first, second) => Number(second.categoryUrl === normalizedGroup.categoryUrl) - Number(first.categoryUrl === normalizedGroup.categoryUrl)).slice(0, 6));
         }
       } catch (requestError) {
-        setError(requestError instanceof Error ? requestError.message : 'Não foi possível carregar este grupo.');
+        if (isActive) setError(requestError instanceof Error ? requestError.message : 'Não foi possível carregar este grupo.');
       } finally {
-        setIsLoading(false);
+        if (isActive) setIsLoading(false);
       }
     }
     void loadGroup();
-  }, [groupId]);
+    return () => { isActive = false; };
+  }, [groupId, initialData.group, initialData.groups, initialNotFound]);
 
   function registerAccess() {
     if (!group) return;
@@ -1297,6 +1325,7 @@ function GroupDetailsPage() {
         path={group ? groupPath(group) : undefined}
         structuredData={groupStructuredData}
         title={group ? `${group.name}: grupo +18 no Telegram` : 'Grupo adulto no Telegram'}
+        type="article"
       />
       <section className="group-details">
         <Link className="back-link" to="/#groups">← Voltar para os grupos</Link>
@@ -1324,7 +1353,7 @@ function GroupDetailsPage() {
                   <div><span>Membros no Telegram</span><strong>{group.members === null ? 'Indispon\u00edvel' : formatCount(group.members)}</strong></div>
                   <div><span>Acessos pelo site</span><strong>{formatCount(group.accesses)}</strong></div>
                 </div>
-                <a className="details-join-button" href={!popunderSettings.enabled || hasOpenedTelegramFolder() ? group.link : popunderSettings.links[0] || telegramFolderUrl} onClick={(event) => handleTelegramGroupLink(event, group.link, registerAccess)} rel="ugc nofollow noopener noreferrer" target="_blank">
+                <a className="details-join-button" href={!popunderSettings.enabled || openedTelegramFolder ? group.link : popunderSettings.links[0] || telegramFolderUrl} onClick={(event) => handleTelegramGroupLink(event, group.link, registerAccess)} rel="ugc nofollow noopener noreferrer" target="_blank">
                   Entrar no grupo pelo Telegram <span aria-hidden="true">→</span>
                 </a>
                 <LikeButton group={group} onLiked={updateLikes} />
@@ -1376,9 +1405,8 @@ function NotFoundPage() {
   );
 }
 
-function App() {
+export function AppRoutes() {
   return (
-    <BrowserRouter>
       <Suspense fallback={<p className="route-loading">Carregando…</p>}>
         <Routes>
           <Route element={<PublicLayout />}>
@@ -1408,7 +1436,16 @@ function App() {
           </Route>
         </Routes>
       </Suspense>
-    </BrowserRouter>
+  );
+}
+
+function App({ initialData = {} }: { initialData?: PublicPageData }) {
+  return (
+    <PublicPageDataContext value={initialData}>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </PublicPageDataContext>
   );
 }
 

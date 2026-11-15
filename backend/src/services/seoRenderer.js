@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { findPublicGroup, loadPublicCategories } from '../controllers/publicController.js';
+import { findPublicGroup, loadFooterCatalog, loadPublicCategories, loadPublicGroups, loadPublicStats } from '../controllers/publicController.js';
 
 // Gera as meta tags de cada rota no próprio HTML entregue pelo servidor.
 // Sem isso, buscadores e redes sociais recebiam o título, a descrição e o
@@ -265,7 +265,7 @@ async function resolveMeta(pathname) {
 
   const groupMatch = pathname.match(/^\/grupos\/([^/]+)\/?$/);
   if (groupMatch) {
-    const groupId = decodeURIComponent(groupMatch[1]).match(/(?:^|-)(\d{1,18})$/)?.[1];
+    const groupId = decodeURIComponent(groupMatch[1]).match(/(?:^|-)(\d{1,19})$/)?.[1];
     const group = groupId ? await findPublicGroup(groupId) : null;
     if (!group) return notFound;
     const path = groupPath(group);
@@ -275,6 +275,7 @@ async function resolveMeta(pathname) {
     const description = groupMetaDescription(group);
     return {
       status: 200,
+      group,
       meta: {
         title,
         description,
@@ -334,20 +335,22 @@ export function canonicalRedirect(req, res, next) {
 }
 
 /**
- * Middleware que entrega o index.html do frontend com as metas corretas da rota.
+ * Entrega metadados específicos e, quando configurado, o corpo React da rota.
  */
-export function createPageRenderer({ indexFile, cacheTemplate = true }) {
+export function createPageRenderer({ indexFile, cacheTemplate = true, renderBody, loadPageData = loadPublicPageData }) {
   return async (req, res, next) => {
     try {
       let resolved;
       try {
         resolved = await resolveMeta(req.path);
       } catch (error) {
-        // Falha no banco não pode derrubar a página: o visitante recebe o site normalmente,
-        // mas com 503 + Retry-After o Google entende que a falha é temporária e volta
-        // depois, em vez de indexar a URL com título e descrição genéricos.
-        console.error('Falha ao gerar metas da página.', { code: error.code, name: error.name });
-        resolved = { status: 503, retryAfterSeconds: 120, meta: { title: SITE_NAME, description: SITE_DESCRIPTION, path: req.path } };
+        if (error instanceof URIError) {
+          resolved = { status: 400, meta: { title: 'Página não encontrada', description: 'A página solicitada não existe ou foi removida.', path: req.path, noIndex: true } };
+        } else {
+          // O cliente pode tentar novamente, mas o 503 evita confirmar conteúdo genérico.
+          console.error('Falha ao gerar metas da página.', { code: error.code, name: error.name });
+          resolved = { status: 503, retryAfterSeconds: 120, meta: { title: SITE_NAME, description: SITE_DESCRIPTION, path: req.path } };
+        }
       }
 
       if (resolved.redirect) {
@@ -356,7 +359,23 @@ export function createPageRenderer({ indexFile, cacheTemplate = true }) {
       }
 
       const template = await loadTemplate(indexFile, cacheTemplate);
-      const html = template.replace('</head>', `${renderHead(resolved.meta)}\n  </head>`);
+      let html = template;
+      // O mesmo React e os mesmos dados públicos são entregues a todos os visitantes.
+      // Áreas administrativas continuam no cliente e nunca entram nos dados iniciais.
+      if (renderBody && resolved.status !== 503 && !isAdministrativePath(req.path)) {
+        try {
+          const data = await loadPageData(req.path, resolved);
+          const markup = await renderBody(req.originalUrl, data);
+          const json = JSON.stringify(data).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+          html = html.replace('<div id="root"></div>', () => `<div id="root" data-ssr="true">${markup}</div><script id="page-data" type="application/json">${json}</script>`);
+        } catch (error) {
+          // Não confirma HTTP 200 se a renderização ou a leitura dos dados falhar.
+          console.error('Falha ao renderizar a página.', { code: error.code, name: error.name });
+          resolved = { status: 503, retryAfterSeconds: 120, meta: { title: SITE_NAME, description: SITE_DESCRIPTION, path: req.path } };
+          html = template;
+        }
+      }
+      html = html.replace('</head>', () => `${renderHead(resolved.meta)}\n  </head>`);
       res.setHeader('Cache-Control', 'no-cache');
       if (resolved.retryAfterSeconds) res.setHeader('Retry-After', String(resolved.retryAfterSeconds));
       res.status(resolved.status).type('html').send(html);
@@ -364,4 +383,19 @@ export function createPageRenderer({ indexFile, cacheTemplate = true }) {
       next(error);
     }
   };
+}
+
+function isAdministrativePath(pathname) {
+  return pathname === '/dash' || pathname === '/login' || pathname === '/admin' || pathname.startsWith('/admin/');
+}
+
+export async function loadPublicPageData(pathname, resolved) {
+  const notFound = resolved.status === 404 || resolved.status === 400;
+  const [groups, categories, stats, footerCatalog] = await Promise.all([
+    notFound ? [] : loadPublicGroups({ refreshMembers: false }),
+    loadPublicCategories(),
+    !notFound && (pathname === '/' || pathname.startsWith('/categorias/')) ? loadPublicStats() : undefined,
+    loadFooterCatalog(),
+  ]);
+  return { pathname, groups, categories, stats, footerCatalog, group: resolved.group || null, notFound };
 }

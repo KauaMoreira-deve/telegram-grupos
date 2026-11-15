@@ -185,3 +185,14 @@ test('página inexistente responde 404, noindex e sem imagem de compartilhamento
   assert.match(html, /<meta name="robots" content="noindex, nofollow, noarchive" \/>/);
   assert.doesNotMatch(html, /og:image/);
 });
+
+test('URLs com codificação inválida retornam 400 sem simular indisponibilidade do banco', async () => {
+  const database = mock.method(conexao, 'query', async () => { throw new Error('URL inválida não deve consultar o banco.'); });
+  for (const url of ['/grupos/%ZZ', '/categorias/%ZZ']) {
+    const response = await render(url);
+    assert.equal(response.status, 400);
+    assert.equal(response.headers['Retry-After'], undefined);
+    assert.match(response.html, /noindex/);
+  }
+  assert.equal(database.mock.callCount(), 0);
+});

@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import cors from 'cors';
 import express from 'express';
 import conexao from './src/config/database.js';
@@ -22,6 +22,17 @@ const allowedOrigins = new Set(env.corsOrigins);
 const projectDirectory = path.dirname(fileURLToPath(import.meta.url));
 const frontendDistDirectory = path.resolve(projectDirectory, '../frontend/dist');
 const frontendIndexFile = path.join(frontendDistDirectory, 'index.html');
+const serverEntryUrl = pathToFileURL(path.resolve(projectDirectory, '../frontend/dist-server/entry-server.js')).href;
+let serverRenderer;
+
+async function renderPublicPage(url, data) {
+  serverRenderer ??= import(serverEntryUrl).catch((error) => {
+    serverRenderer = null;
+    throw error;
+  });
+  const { renderPage } = await serverRenderer;
+  return renderPage(url, data);
+}
 
 // ── Estado de prontidão ──────────────────────────────────────────────
 // O servidor começa a escutar imediatamente (requisito Hostinger: < 3 s),
@@ -120,7 +131,7 @@ if (env.isProduction || process.env.SERVE_FRONTEND === 'true') {
     },
   }));
   // Entrega o index.html com título, descrição e canonical corretos para cada rota.
-  app.get('/{*frontendPath}', createPageRenderer({ indexFile: frontendIndexFile, cacheTemplate: env.isProduction }));
+  app.get('/{*frontendPath}', createPageRenderer({ indexFile: frontendIndexFile, cacheTemplate: env.isProduction, renderBody: renderPublicPage }));
 }
 
 app.use(notFoundHandler);

@@ -31,6 +31,20 @@ Ao usar uma plataforma com suporte a Docker Compose, selecione a raiz do reposit
 
 O build gera `frontend/dist`. Em produção, o Express serve esse diretório para rotas do site e mantém todas as rotas `/api/*` sob responsabilidade da API.
 
+### Renderização no servidor e publicação segura na Hostinger
+
+O build de produção da aplicação deve gerar os dois artefatos: `frontend/dist`, com os arquivos públicos, e `frontend/dist-server`, com a renderização React executada pelo Express. Publique ambos a partir do mesmo commit, usando os comandos da raiz documentados acima. Não publique somente os arquivos estáticos: as rotas públicas precisam passar pelo Express para receber o conteúdo e os metadados específicos da URL no HTML inicial.
+
+Antes de publicar, registre a versão atualmente ativa no painel da Hostinger e o SHA do repositório. A referência do repositório antes desta auditoria é `main`, commit `995e217280b955ad7a14997039fd45637cfd4b67`; esse SHA não comprova, por si só, qual versão está ativa na hospedagem. Confirme essa correspondência no painel antes de usá-lo para rollback.
+
+Execute `npm run build:hostinger`, `npm test` e `npm run lint` e valide o servidor com os dois diretórios gerados. O build deve preceder os testes de integração SSR para que o renderer compilado seja exercitado; confirme que nenhum desses testes foi ignorado por falta do artefato. Verifique a página inicial, uma categoria, três grupos existentes, uma URL inexistente, `robots.txt` e `sitemap.xml`. Confirme os status HTTP, redirecionamentos permanentes, canonical e conteúdo inicial sem depender de JavaScript no navegador.
+
+Preserve todas as variáveis de ambiente já configuradas no painel, o banco e seus dados. Esta publicação de SEO não exige migrations nem alterações no esquema: não adicione migrations ao deploy e mantenha a configuração existente de execução de migrations. Confirme um backup recente e a disponibilidade da versão anterior antes de iniciar a publicação.
+
+Após o deploy, repita a validação pelo domínio de produção e confira os logs da aplicação no painel sem divulgar segredos. Se houver regressão crítica, utilize o recurso de republicar a versão anterior da Hostinger, preservando as variáveis e os dados. Se o fluxo existente exigir Git, crie um `git revert` do commit da publicação e publique esse novo commit pelo mesmo processo; não use `reset --hard` ou push forçado. Não restaure o banco como parte de um rollback apenas de código.
+
+A configuração Docker Compose abaixo é uma alternativa legada e não foi validada nesta auditoria. Seus arquivos atuais servem o frontend diretamente pelo Nginx e não constituem o fluxo de SSR descrito acima. Não a utilize para esta publicação sem confirmar previamente a arquitetura ativa e validar a integração da renderização no servidor. Respostas públicas com o header `Server: hcdn` evidenciam a camada Hostinger, mas não substituem a confirmação do runtime e da configuração pelo painel.
+
 ## 1. Requisitos do servidor
 
 - Um VPS Linux com Docker Engine e Docker Compose v2.
