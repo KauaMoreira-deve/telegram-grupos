@@ -556,12 +556,12 @@ function PublicLayout() {
   );
 }
 
-function GroupCardContent({ group }: { group: PublicGroup }) {
+function GroupCardContent({ group, linkNameToDetails = false }: { group: PublicGroup; linkNameToDetails?: boolean }) {
   return (
     <>
       <img alt={`Imagem do grupo ${group.name}`} className="group-image" decoding="async" loading="lazy" referrerPolicy="no-referrer" src={group.image || imagemGrupos} />
       <div className="group-card-content">
-        <h3>{group.name}</h3>
+        <h3>{linkNameToDetails ? <Link className="group-card-link" to={groupPath(group)}>{group.name}</Link> : group.name}</h3>
         <p>{group.description}</p>
         <GroupTags group={group} limit={3} showCategory={false} />
       </div>
@@ -750,6 +750,7 @@ function GroupCard({ group, onAccess, onLiked }: { group: PublicGroup; onAccess:
   }
 
   function openCardWithKeyboard(event: React.KeyboardEvent<HTMLElement>) {
+    if ((event.target as HTMLElement).closest('a, button')) return;
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
     openCard(event as unknown as React.MouseEvent<HTMLElement>);
@@ -758,7 +759,7 @@ function GroupCard({ group, onAccess, onLiked }: { group: PublicGroup; onAccess:
   return (
     <article aria-label={isFeatured ? `Entrar no grupo ${group.name}` : `Ver detalhes do grupo ${group.name}`} className={`group-card ${isFeatured ? 'group-card-featured' : ''}`} key={group.id} onClick={openCard} onKeyDown={openCardWithKeyboard} role={isFeatured ? 'link' : undefined} tabIndex={isFeatured ? 0 : undefined}>
       {isFeatured && <span className="group-featured-ribbon">Destaque</span>}
-      {isFeatured ? <GroupCardContent group={group} /> : <Link aria-label={`Ver detalhes do grupo ${group.name}`} className="group-card-link" to={groupPath(group)}><GroupCardContent group={group} /></Link>}
+      {isFeatured ? <GroupCardContent group={group} linkNameToDetails /> : <Link aria-label={`Ver detalhes do grupo ${group.name}`} className="group-card-link" to={groupPath(group)}><GroupCardContent group={group} /></Link>}
       <div className="group-card-actions">
         {isFeatured
           ? <a className="group-card-action" href={group.link} onClick={() => onAccess(group.id)} rel="ugc nofollow noopener noreferrer">Acessar grupo <span aria-hidden="true">→</span></a>

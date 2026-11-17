@@ -33,7 +33,7 @@ const groupBase = {
 };
 // Exemplos neutros de formatos reais: nomes distintos, mais de uma categoria e membros indisponíveis.
 const groups = [
-  { ...groupBase, id: 41, name: 'Grupo Teste Alfa', description: 'Descrição exclusiva cadastrada para o grupo Alfa.', link: 'https://t.me/grupo_teste_alfa' },
+  { ...groupBase, id: 41, name: 'Grupo Teste Alfa', description: 'Descrição exclusiva cadastrada para o grupo Alfa.', link: 'https://t.me/grupo_teste_alfa', featured: 1 },
   { ...groupBase, id: 42, name: 'Comunidade Beta', description: 'Descrição exclusiva cadastrada para a comunidade Beta.', link: 'https://t.me/comunidade_beta', members: null },
   { ...groupBase, id: 43, name: 'Clube Gama', description: 'Descrição exclusiva cadastrada para o clube Gama.', link: 'https://t.me/clube_gama', category: categories[1].name, categoryUrl: categories[1].url },
 ];
@@ -115,6 +115,18 @@ realPageTest('HTML inicial da home e das categorias contém conteúdo e links ex
   const homeBody = bodyMarkup(home.html);
   assert.match(homeBody, /<h1>[\s\S]*?Putaria no Telegram:[\s\S]*?<\/h1>/);
   for (const groupPath of groupPaths) assert.ok(homeBody.includes(`href="${groupPath}"`), 'home descobre cada grupo por link real');
+  const featuredCard = homeBody.match(/<article\b[^>]*class="group-card group-card-featured"[^>]*>([\s\S]*?)<\/article>/)?.[1];
+  assert.ok(featuredCard, 'a home renderiza o grupo em destaque');
+  const featuredLinks = [...featuredCard.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)];
+  const internalLinks = featuredLinks.filter((link) => link[1].includes(`href="${groupPaths[0]}"`));
+  assert.equal(internalLinks.length, 1, 'o destaque possui um link interno rastreável');
+  assert.equal(internalLinks[0][2], groups[0].name, 'somente o nome do destaque compõe o link interno');
+  assert.doesNotMatch(internalLinks[0][2], /<img\b|<p\b/);
+  assert.ok(!internalLinks[0][2].includes(groups[0].description), 'a descrição continua fora do link interno');
+  assert.ok(featuredCard.includes(`alt="Imagem do grupo ${groups[0].name}"`));
+  assert.ok(featuredCard.includes(`<p>${groups[0].description}</p>`));
+  const externalCta = featuredLinks.find((link) => link[2].startsWith('Acessar grupo '));
+  assert.ok(externalCta?.[1].includes(`href="${groups[0].link}"`), 'o CTA do destaque mantém o destino externo original');
   assert.match(home.html, /<meta name="rating" content="adult"/);
 
   const categoryIndex = await requestPage('/categorias');
